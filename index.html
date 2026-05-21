@@ -220,6 +220,47 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
 .inv-preview th { text-align: left; padding: 8px; border-bottom: 2px solid #1a2332; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #5c6370; }
 .inv-preview td { padding: 8px; border-bottom: 1px solid #e8e6e1; }
 
+/* ═══ HOW IT WORKS ═══ */
+.hiw-hero { text-align: center; padding: 36px 24px 28px; }
+.hiw-hero-title { font-family: 'DM Serif Display', serif; font-size: 1.8rem; color: var(--navy); margin-bottom: 6px; }
+.hiw-hero-sub { font-size: 0.92rem; color: var(--text-dim); max-width: 520px; margin: 0 auto; line-height: 1.7; }
+.hiw-section { margin-bottom: 24px; }
+.hiw-section-title { font-family: 'DM Serif Display', serif; font-size: 1.15rem; color: var(--navy); margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+.hiw-section-title .hiw-num { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; font-weight: 700; background: var(--emerald); color: white; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.hiw-flow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+.hiw-flow-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 20px 16px; text-align: center; box-shadow: var(--shadow); position: relative; transition: border-color 0.2s, transform 0.2s; }
+.hiw-flow-card:hover { border-color: var(--emerald); transform: translateY(-2px); }
+.hiw-flow-card .hiw-icon { font-size: 2rem; margin-bottom: 10px; }
+.hiw-flow-card .hiw-card-title { font-size: 0.88rem; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+.hiw-flow-card .hiw-card-desc { font-size: 0.72rem; color: var(--text-dim); line-height: 1.6; }
+.hiw-flow-card .hiw-arrow { position: absolute; right: -18px; top: 50%; transform: translateY(-50%); font-size: 1.2rem; color: var(--text-muted); z-index: 1; }
+.hiw-features { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.hiw-feat { display: flex; gap: 12px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 5px; box-shadow: var(--shadow); align-items: flex-start; transition: border-color 0.2s; }
+.hiw-feat:hover { border-color: var(--emerald); }
+.hiw-feat-icon { font-size: 1.4rem; flex-shrink: 0; margin-top: 2px; }
+.hiw-feat-title { font-size: 0.82rem; font-weight: 700; color: var(--navy); margin-bottom: 2px; }
+.hiw-feat-desc { font-size: 0.7rem; color: var(--text-dim); line-height: 1.6; }
+.hiw-ai-modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.hiw-ai-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 18px 16px; box-shadow: var(--shadow); }
+.hiw-ai-card.recommended { border-color: var(--emerald); border-width: 2px; position: relative; }
+.hiw-ai-card.recommended::after { content: 'RECOMMENDED'; position: absolute; top: -8px; right: 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.45rem; font-weight: 700; letter-spacing: 0.1em; background: var(--emerald); color: white; padding: 2px 8px; border-radius: 3px; }
+.hiw-ai-card .hiw-ai-icon { font-size: 1.6rem; margin-bottom: 8px; }
+.hiw-ai-card .hiw-ai-name { font-size: 0.88rem; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+.hiw-ai-card .hiw-ai-desc { font-size: 0.7rem; color: var(--text-dim); line-height: 1.6; }
+.hiw-ai-card .hiw-ai-tag { font-family: 'JetBrains Mono', monospace; font-size: 0.5rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; display: inline-block; padding: 2px 7px; border-radius: 2px; margin-top: 8px; }
+.hiw-ai-card .hiw-ai-tag.green { background: var(--emerald-light); color: var(--emerald); }
+.hiw-ai-card .hiw-ai-tag.amber { background: var(--amber-light); color: var(--amber); }
+.hiw-ai-card .hiw-ai-tag.blue { background: var(--blue-light); color: var(--blue); }
+.hiw-trust { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 12px; }
+.hiw-trust-item { text-align: center; padding: 16px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 5px; box-shadow: var(--shadow); }
+.hiw-trust-icon { font-size: 1.5rem; margin-bottom: 6px; }
+.hiw-trust-label { font-family: 'JetBrains Mono', monospace; font-size: 0.52rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--emerald); margin-bottom: 3px; }
+.hiw-trust-desc { font-size: 0.65rem; color: var(--text-dim); line-height: 1.5; }
+.hiw-cta { text-align: center; padding: 32px 24px; background: var(--emerald-light); border: 2px solid var(--emerald); border-radius: 8px; margin-top: 24px; }
+.hiw-cta-title { font-family: 'DM Serif Display', serif; font-size: 1.2rem; color: var(--emerald); margin-bottom: 6px; }
+.hiw-cta-sub { font-size: 0.82rem; color: var(--text-dim); margin-bottom: 16px; }
+@media (max-width: 800px) { .hiw-flow, .hiw-ai-modes { grid-template-columns: 1fr; } .hiw-features, .hiw-trust { grid-template-columns: 1fr; } .hiw-flow-card .hiw-arrow { display: none; } }
+
 /* ═══ GRIDS / WELCOME ═══ */
 .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
@@ -291,6 +332,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
   </div>
   <div class="sb-section">Dashboard</div>
   <div class="sb-item active" data-page="welcome"><span class="sb-icon">🏠</span> Welcome</div>
+  <div class="sb-item" data-page="howitworks"><span class="sb-icon">🚀</span> How It Works <span class="sb-badge g">START</span></div>
   <div class="sb-item" data-page="overview"><span class="sb-icon">📊</span> Overview</div>
   <div class="sb-item" data-page="transactions"><span class="sb-icon">💳</span> Transactions <span class="sb-badge g" id="txn-count-badge"></span></div>
   <div class="sb-item" data-page="invoices"><span class="sb-icon">📄</span> Invoices</div>
@@ -333,6 +375,162 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
     </div>
     <button class="btn btn-g" onclick="goTo('business')">Set Up My Business →</button>
   </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<div class="page" id="p-howitworks">
+  <div class="hiw-hero">
+    <div style="font-size:2.5rem;margin-bottom:12px;">🚀</div>
+    <div class="hiw-hero-title">How FallAccount Works</div>
+    <div class="hiw-hero-sub">One HTML file. No cloud. No subscription. No account. Your complete accounting autopilot for UK sole traders, powered by an 8+1 AI swarm that does the work so you don't have to.</div>
+  </div>
+
+  <!-- SECTION 1: THE FLOW -->
+  <div class="hiw-section">
+    <div class="hiw-section-title"><span class="hiw-num">1</span> The 3-Step Flow</div>
+    <div class="hiw-flow">
+      <div class="hiw-flow-card">
+        <div class="hiw-arrow">→</div>
+        <div class="hiw-icon">📎</div>
+        <div class="hiw-card-title">Drop Anything</div>
+        <div class="hiw-card-desc">Drag receipts, paste screenshots (Ctrl+V), or paste bank CSV data. Drop files anywhere on the page — the AI picks them up automatically.</div>
+      </div>
+      <div class="hiw-flow-card">
+        <div class="hiw-arrow">→</div>
+        <div class="hiw-icon">🤖</div>
+        <div class="hiw-card-title">AI Reads & Sorts</div>
+        <div class="hiw-card-desc">The 8+1 swarm extracts vendor, amount, date, and category. Each field gets a confidence score — green means trust it, red means check it.</div>
+      </div>
+      <div class="hiw-flow-card">
+        <div class="hiw-icon">📊</div>
+        <div class="hiw-card-title">Books Done</div>
+        <div class="hiw-card-desc">Transactions stored. Deductions found. Tax forecast updated. MTD quarterly reports ready. All live, all automatic, all yours.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: WHAT YOU CAN DO -->
+  <div class="hiw-section">
+    <div class="hiw-section-title"><span class="hiw-num">2</span> Everything It Does</div>
+    <div class="hiw-features">
+      <div class="hiw-feat">
+        <div class="hiw-feat-icon">📷</div>
+        <div><div class="hiw-feat-title">Receipt Scanner</div><div class="hiw-feat-desc">Take a photo or drop an image. AI reads the receipt and extracts vendor, amount, date, VAT, and category. Stores it as a transaction with full audit trail.</div></div>
+      </div>
+      <div class="hiw-feat">
+        <div class="hiw-feat-icon">🏦</div>
+        <div><div class="hiw-feat-title">Bank Statement Parser</div><div class="hiw-feat-desc">Paste rows from your bank CSV or app. AI auto-categorises every line — income, expenses, software, travel, office — and imports them in one click.</div></div>
+      </div>
+      <div class="hiw-feat">
+        <div class="hiw-feat-icon">🧮</div>
+        <div><div class="hiw-feat-title">Live Tax Forecast</div><div class="hiw-feat-desc">Real-time estimate using 2026/27 UK rates. Income tax, NI Class 2 + 4, personal allowance, all brackets. Tells you exactly how much to set aside each month.</div></div>
+      </div>
+      <div class="hiw-feat">
+        <div class="hiw-feat-icon">🔍</div>
+        <div><div class="hiw-feat-title">Deduction Finder</div><div class="hiw-feat-desc">AI scans your expenses and business profile to find every deduction you're entitled to. Mileage, home office, phone, software, insurance — nothing missed.</div></div>
+      </div>
+      <div class="hiw-feat">
+        <div class="hiw-feat-icon">📋</div>
+        <div><div class="hiw-feat-title">MTD Quarterly Reports</div><div class="hiw-feat-desc">Making Tax Digital compliant exports generated automatically from your data. Each quarter tracked with income, expenses, and profit summaries.</div></div>
+      </div>
+      <div class="hiw-feat">
+        <div class="hiw-feat-icon">📄</div>
+        <div><div class="hiw-feat-title">Invoice Generator</div><div class="hiw-feat-desc">Create professional invoices with your business details. Download as HTML, track payment status (sent, paid, overdue), and auto-record as income.</div></div>
+      </div>
+      <div class="hiw-feat">
+        <div class="hiw-feat-icon">🧠</div>
+        <div><div class="hiw-feat-title">AI Tax Accountant</div><div class="hiw-feat-desc">Ask any UK tax question in plain English. The AI knows HMRC rules, your business profile, and your data. Like having an accountant on call 24/7.</div></div>
+      </div>
+      <div class="hiw-feat">
+        <div class="hiw-feat-icon">📖</div>
+        <div><div class="hiw-feat-title">Offline Tax Guide</div><div class="hiw-feat-desc">33 searchable entries covering every common sole trader question. Mileage rates, home office rules, phone claims, MTD deadlines — works with zero internet.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: AI MODES -->
+  <div class="hiw-section">
+    <div class="hiw-section-title"><span class="hiw-num">3</span> Three AI Modes — Your Choice</div>
+    <div class="hiw-ai-modes">
+      <div class="hiw-ai-card recommended">
+        <div class="hiw-ai-icon">🔑</div>
+        <div class="hiw-ai-name">Claude API</div>
+        <div class="hiw-ai-desc">Best accuracy. Handles receipts, complex questions, and edge cases. Bring your own Anthropic API key — data goes direct from your browser to Anthropic. No intermediary.</div>
+        <span class="hiw-ai-tag green">Best for receipts</span>
+      </div>
+      <div class="hiw-ai-card">
+        <div class="hiw-ai-icon">🤖</div>
+        <div class="hiw-ai-name">Local WebLLM</div>
+        <div class="hiw-ai-desc">Runs entirely on your GPU via WebGPU. Zero API cost, zero internet after first model download. Handles chat and bank categorisation. Full privacy.</div>
+        <span class="hiw-ai-tag amber">Full privacy</span>
+      </div>
+      <div class="hiw-ai-card">
+        <div class="hiw-ai-icon">📖</div>
+        <div class="hiw-ai-name">Offline Guide</div>
+        <div class="hiw-ai-desc">Built-in UK tax knowledge base. Works with zero AI, zero internet, zero setup. 33 entries covering every common sole trader question with HMRC references.</div>
+        <span class="hiw-ai-tag blue">Zero setup</span>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:10px;font-size:0.72rem;color:var(--text-muted);">Set your AI mode in the sidebar under <strong>API Key</strong>. Auto mode uses Claude if available, falls back to local, then offline guide.</div>
+  </div>
+
+  <!-- SECTION 4: TRUST -->
+  <div class="hiw-section">
+    <div class="hiw-section-title"><span class="hiw-num">4</span> Why You Can Trust It</div>
+    <div class="hiw-trust">
+      <div class="hiw-trust-item">
+        <div class="hiw-trust-icon">🔒</div>
+        <div class="hiw-trust-label">Sovereign</div>
+        <div class="hiw-trust-desc">Your data never leaves your browser. IndexedDB storage, no cloud, no telemetry, no tracking.</div>
+      </div>
+      <div class="hiw-trust-item">
+        <div class="hiw-trust-icon">🧬</div>
+        <div class="hiw-trust-label">8+1 Swarm</div>
+        <div class="hiw-trust-desc">9 specialist AI agents, not one. Each field gets its own confidence score. No hallucinated numbers.</div>
+      </div>
+      <div class="hiw-trust-item">
+        <div class="hiw-trust-icon">📝</div>
+        <div class="hiw-trust-label">Audit Trail</div>
+        <div class="hiw-trust-desc">Every AI decision logged with full reasoning. Exportable for HMRC if they ever ask.</div>
+      </div>
+      <div class="hiw-trust-item">
+        <div class="hiw-trust-icon">♾️</div>
+        <div class="hiw-trust-label">Yours Forever</div>
+        <div class="hiw-trust-desc">One HTML file you own. No subscription. No vendor lock-in. Works offline. Works in 10 years.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 5: QUICK START -->
+  <div class="hiw-section">
+    <div class="hiw-section-title"><span class="hiw-num">5</span> Quick Start Guide</div>
+    <div class="card">
+      <div class="card-b" style="padding:20px 22px;">
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:10px 16px;align-items:start;font-size:0.82rem;">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;font-weight:700;color:var(--emerald);padding-top:2px;">STEP 1</div>
+          <div><strong style="color:var(--navy);">Set up your business</strong><br><span style="color:var(--text-dim);font-size:0.75rem;">Click <strong>My Business</strong> in the sidebar. Enter your trade, revenue, home hours, mileage. This personalises everything — tax calculations, deduction suggestions, AI responses.</span></div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;font-weight:700;color:var(--emerald);padding-top:2px;">STEP 2</div>
+          <div><strong style="color:var(--navy);">Connect your AI (optional)</strong><br><span style="color:var(--text-dim);font-size:0.75rem;">Click <strong>API Key</strong> at the bottom of the sidebar. Paste your Anthropic key from console.anthropic.com. Or skip this — the offline guide works without any AI.</span></div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;font-weight:700;color:var(--emerald);padding-top:2px;">STEP 3</div>
+          <div><strong style="color:var(--navy);">Drop your first receipt</strong><br><span style="color:var(--text-dim);font-size:0.75rem;">Drag any receipt image onto the page, or press <strong>Ctrl+V</strong> to paste a screenshot. The AI reads it, extracts everything, and stores it as a transaction.</span></div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;font-weight:700;color:var(--emerald);padding-top:2px;">STEP 4</div>
+          <div><strong style="color:var(--navy);">Import bank data</strong><br><span style="color:var(--text-dim);font-size:0.75rem;">Go to <strong>Bank Parser</strong>, paste your bank CSV or copy-paste from your banking app. Hit Auto-Categorise and import. Months of transactions in seconds.</span></div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;font-weight:700;color:var(--emerald);padding-top:2px;">STEP 5</div>
+          <div><strong style="color:var(--navy);">Check your dashboard</strong><br><span style="color:var(--text-dim);font-size:0.75rem;">Go to <strong>Overview</strong> to see revenue, expenses, estimated tax, and how much to set aside monthly. Everything updates live as you add data.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="hiw-cta">
+    <div class="hiw-cta-title">Ready to start?</div>
+    <div class="hiw-cta-sub">Set up your business profile and the AI handles the rest.</div>
+    <button class="btn btn-g" onclick="goTo('business')" style="margin-right:8px;">Set Up My Business →</button>
+    <button class="btn btn-n" onclick="goTo('ai')">Ask the AI Accountant</button>
+  </div>
+
+  <div style="text-align:center;margin-top:20px;font-size:0.6rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">Built by Sodor Group · ai-nativesolutions.com · Sovereign tools for people who'd rather own than rent · ◊·κ=1</div>
 </div>
 
 <!-- OVERVIEW -->
