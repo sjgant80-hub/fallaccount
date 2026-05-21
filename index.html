@@ -355,7 +355,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
     ◊·κ=1 · Sovereign · Your data stays here<br>
     Built by Sodor Group · v4.0 ELITE · 8+1 Swarm
     <button class="theme-toggle" onclick="toggleTheme()">🌓 Toggle Dark Mode</button>
-    <button class="theme-toggle" onclick="showApiKeyModal()" style="margin-top:4px;">🔑 API Key <span id="apikey-indicator"></span></button>
+    <button class="theme-toggle" onclick="showApiKeyModal()" style="margin-top:4px;">🔑 LLM API Key <span id="apikey-indicator"></span></button>
     <button class="theme-toggle" onclick="showAuditLog()" style="margin-top:4px;">📋 Audit Log</button>
   </div>
 </nav>
@@ -450,13 +450,13 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
 
   <!-- SECTION 3: AI MODES -->
   <div class="hiw-section">
-    <div class="hiw-section-title"><span class="hiw-num">3</span> Three AI Modes — Your Choice</div>
+    <div class="hiw-section-title"><span class="hiw-num">3</span> Bring Any LLM — Your Choice</div>
     <div class="hiw-ai-modes">
       <div class="hiw-ai-card recommended">
-        <div class="hiw-ai-icon">🔑</div>
-        <div class="hiw-ai-name">Claude API</div>
-        <div class="hiw-ai-desc">Best accuracy. Handles receipts, complex questions, and edge cases. Bring your own Anthropic API key — data goes direct from your browser to Anthropic. No intermediary.</div>
-        <span class="hiw-ai-tag green">Best for receipts</span>
+        <div class="hiw-ai-icon">🧠</div>
+        <div class="hiw-ai-name">Any Cloud LLM</div>
+        <div class="hiw-ai-desc">Works with <strong>OpenAI</strong> (GPT-4o), <strong>Anthropic</strong> (Claude), <strong>Google</strong> (Gemini), <strong>OpenRouter</strong> (hundreds of models), or any <strong>OpenAI-compatible</strong> endpoint. Bring your own key — data goes direct from your browser to the provider. No intermediary, no middleman.</div>
+        <span class="hiw-ai-tag green">5 providers built in</span>
       </div>
       <div class="hiw-ai-card">
         <div class="hiw-ai-icon">🤖</div>
@@ -471,7 +471,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
         <span class="hiw-ai-tag blue">Zero setup</span>
       </div>
     </div>
-    <div style="text-align:center;margin-top:10px;font-size:0.72rem;color:var(--text-muted);">Set your AI mode in the sidebar under <strong>API Key</strong>. Auto mode uses Claude if available, falls back to local, then offline guide.</div>
+    <div style="text-align:center;margin-top:10px;font-size:0.72rem;color:var(--text-muted);">Click <strong>🔑 API Key</strong> in the sidebar to pick your provider and model. Use whatever LLM you already pay for.</div>
   </div>
 
   <!-- SECTION 4: TRUST -->
@@ -510,7 +510,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
           <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;font-weight:700;color:var(--emerald);padding-top:2px;">STEP 1</div>
           <div><strong style="color:var(--navy);">Set up your business</strong><br><span style="color:var(--text-dim);font-size:0.75rem;">Click <strong>My Business</strong> in the sidebar. Enter your trade, revenue, home hours, mileage. This personalises everything — tax calculations, deduction suggestions, AI responses.</span></div>
           <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;font-weight:700;color:var(--emerald);padding-top:2px;">STEP 2</div>
-          <div><strong style="color:var(--navy);">Connect your AI (optional)</strong><br><span style="color:var(--text-dim);font-size:0.75rem;">Click <strong>API Key</strong> at the bottom of the sidebar. Paste your Anthropic key from console.anthropic.com. Or skip this — the offline guide works without any AI.</span></div>
+          <div><strong style="color:var(--navy);">Connect your AI (optional)</strong><br><span style="color:var(--text-dim);font-size:0.75rem;">Click <strong>🔑 API Key</strong> at the bottom of the sidebar. Pick your provider (OpenAI, Anthropic, Google, OpenRouter, or custom) and paste your key. Or skip this — the offline guide works without any AI.</span></div>
           <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;font-weight:700;color:var(--emerald);padding-top:2px;">STEP 3</div>
           <div><strong style="color:var(--navy);">Drop your first receipt</strong><br><span style="color:var(--text-dim);font-size:0.75rem;">Drag any receipt image onto the page, or press <strong>Ctrl+V</strong> to paste a screenshot. The AI reads it, extracts everything, and stores it as a transaction.</span></div>
           <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;font-weight:700;color:var(--emerald);padding-top:2px;">STEP 4</div>
@@ -615,9 +615,9 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
 
 <!-- AI ACCOUNTANT -->
 <div class="page" id="p-ai">
-  <div class="page-header"><div class="page-title">AI Accountant</div><div class="page-sub">Claude-powered · trained on UK tax law + your business</div></div>
+  <div class="page-header"><div class="page-title">AI Accountant</div><div class="page-sub">Any LLM · trained on UK tax law + your business</div></div>
   <div class="chat-box">
-    <div class="chat-header"><div class="chat-dot"></div><div><div class="chat-title">FallAccount AI</div><div class="chat-sub">Claude Sonnet · UK tax expert · your data loaded</div></div></div>
+    <div class="chat-header"><div class="chat-dot"></div><div><div class="chat-title">FallAccount AI</div><div class="chat-sub" id="chat-provider-sub">AI Accountant · UK tax expert · your data loaded</div></div></div>
     <div class="chat-msgs" id="chat-msgs"></div>
     <div class="chat-quick">
       <div class="qbtn" onclick="askAI('Can I claim my phone bill?')">Phone bill?</div>
@@ -1186,7 +1186,7 @@ function askAI(text){
     aiConvo[aiConvo.length-1].text=r;rChat()
   }).catch(function(err){
     aiConvo[aiConvo.length-1].text=(err.message&&err.message.indexOf('API key')>-1)?
-      '<em style="color:var(--amber);">No API key set. Click 🔑 in the sidebar to add your Claude API key, or use the local tax guide below.</em><br><br>'+localAns(text):
+      '<em style="color:var(--amber);">No API key set. Click 🔑 in the sidebar to add your LLM API key, or use the local tax guide below.</em><br><br>'+localAns(text):
       '<em style="color:var(--amber);">'+esc(err.message||'AI unavailable')+'</em><br><br>'+localAns(text);
     rChat()
   }).finally(function(){
@@ -1195,66 +1195,117 @@ function askAI(text){
   })
 }
 
-// ═══ API KEY MANAGEMENT ═══
-function getApiKey(){return localStorage.getItem('fa_claude_key')||''}
-function setApiKey(k){if(k)localStorage.setItem('fa_claude_key',k.trim());else localStorage.removeItem('fa_claude_key')}
+// ═══ API KEY & PROVIDER MANAGEMENT ═══
+var LLM_PROVIDERS={
+  anthropic:{name:'Anthropic (Claude)',placeholder:'sk-ant-api03-...',url:'https://api.anthropic.com/v1/messages',models:['claude-sonnet-4-20250514','claude-haiku-4-20250414'],defaultModel:'claude-sonnet-4-20250514',help:'console.anthropic.com'},
+  openai:{name:'OpenAI (GPT)',placeholder:'sk-...',url:'https://api.openai.com/v1/chat/completions',models:['gpt-4o','gpt-4o-mini','gpt-4.1','o4-mini'],defaultModel:'gpt-4o',help:'platform.openai.com/api-keys'},
+  google:{name:'Google (Gemini)',placeholder:'AIza...',url:'https://generativelanguage.googleapis.com/v1beta/models/',models:['gemini-2.5-flash','gemini-2.5-pro','gemini-2.0-flash'],defaultModel:'gemini-2.5-flash',help:'aistudio.google.com/apikey'},
+  openrouter:{name:'OpenRouter (Any Model)',placeholder:'sk-or-...',url:'https://openrouter.ai/api/v1/chat/completions',models:['anthropic/claude-sonnet-4','openai/gpt-4o','google/gemini-2.5-flash','meta-llama/llama-4-maverick'],defaultModel:'anthropic/claude-sonnet-4',help:'openrouter.ai/keys'},
+  custom:{name:'Custom (OpenAI-compatible)',placeholder:'your-api-key',url:'',models:[''],defaultModel:'',help:'Any OpenAI-compatible API endpoint'}
+};
+function getApiKey(){return localStorage.getItem('fa_api_key')||localStorage.getItem('fa_claude_key')||''}
+function setApiKey(k){if(k){localStorage.setItem('fa_api_key',k.trim());localStorage.removeItem('fa_claude_key')}else{localStorage.removeItem('fa_api_key');localStorage.removeItem('fa_claude_key')}}
+function getProvider(){return localStorage.getItem('fa_provider')||'anthropic'}
+function setProvider(p){localStorage.setItem('fa_provider',p)}
+function getModel(){return localStorage.getItem('fa_model')||LLM_PROVIDERS[getProvider()].defaultModel}
+function setModel(m){localStorage.setItem('fa_model',m)}
+function getCustomUrl(){return localStorage.getItem('fa_custom_url')||''}
+function setCustomUrl(u){localStorage.setItem('fa_custom_url',u)}
 function showApiKeyModal(){
   var existing=getApiKey();
+  var prov=getProvider();
+  var curModel=getModel();
+  var customUrl=getCustomUrl();
   var modal=document.createElement('div');
   modal.className='fa-modal';
   modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:10000;display:grid;place-items:center;';
-  modal.innerHTML='<div style="background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:28px;width:420px;max-width:90vw;"><h3 style="font-family:DM Serif Display,serif;font-size:1.05rem;color:var(--navy);margin-bottom:10px;">Claude API Key</h3><p style="font-size:0.78rem;color:var(--text-dim);line-height:1.6;margin-bottom:14px;">Your key stays in this browser\'s localStorage. Never leaves your machine except to call the Anthropic API directly. Sovereign.</p><input type="password" id="apikey-input" placeholder="sk-ant-api03-..." value="'+existing+'" style="width:100%;padding:10px;border:1px solid var(--border2);border-radius:4px;font-family:JetBrains Mono,monospace;font-size:0.78rem;margin-bottom:10px;background:var(--panel);color:var(--text);"><div style="display:flex;gap:8px;"><button class="btn btn-g btn-s" style="flex:1;" onclick="saveApiKeyUI()">Save Key</button><button class="btn btn-s" style="flex:1;" onclick="closeModal()">Cancel</button></div><div style="font-family:JetBrains Mono,monospace;font-size:0.55rem;color:var(--text-muted);margin-top:10px;line-height:1.5;">Get your key at console.anthropic.com. Without a key the app still works — AI features use the local tax guide.</div></div>';
+  var provOpts=Object.keys(LLM_PROVIDERS).map(function(k){return '<option value="'+k+'"'+(k===prov?' selected':'')+'>'+LLM_PROVIDERS[k].name+'</option>'}).join('');
+  var info=LLM_PROVIDERS[prov];
+  var modelOpts=info.models.map(function(m){return '<option value="'+m+'"'+(m===curModel?' selected':'')+'>'+m+'</option>'}).join('');
+  modal.innerHTML='<div style="background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:28px;width:460px;max-width:90vw;">'
+    +'<h3 style="font-family:DM Serif Display,serif;font-size:1.05rem;color:var(--navy);margin-bottom:10px;">LLM API Settings</h3>'
+    +'<p style="font-size:0.78rem;color:var(--text-dim);line-height:1.6;margin-bottom:14px;">Your key stays in localStorage. Never leaves your machine except direct API calls. Works with any major LLM provider.</p>'
+    +'<label style="font-family:JetBrains Mono,monospace;font-size:0.55rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:4px;">Provider</label>'
+    +'<select id="apikey-provider" onchange="providerChanged()" style="width:100%;padding:9px;border:1px solid var(--border2);border-radius:4px;font-family:Outfit,sans-serif;font-size:0.82rem;margin-bottom:10px;background:var(--panel);color:var(--text);appearance:auto;">'+provOpts+'</select>'
+    +'<div id="custom-url-row" style="display:'+(prov==='custom'?'block':'none')+';margin-bottom:10px;"><label style="font-family:JetBrains Mono,monospace;font-size:0.55rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:4px;">Endpoint URL</label><input id="apikey-custom-url" placeholder="https://your-server.com/v1/chat/completions" value="'+esc(customUrl)+'" style="width:100%;padding:9px;border:1px solid var(--border2);border-radius:4px;font-family:JetBrains Mono,monospace;font-size:0.72rem;background:var(--panel);color:var(--text);"></div>'
+    +'<label style="font-family:JetBrains Mono,monospace;font-size:0.55rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:4px;">Model</label>'
+    +'<select id="apikey-model" style="width:100%;padding:9px;border:1px solid var(--border2);border-radius:4px;font-family:JetBrains Mono,monospace;font-size:0.72rem;margin-bottom:10px;background:var(--panel);color:var(--text);appearance:auto;">'+modelOpts+'</select>'
+    +'<label style="font-family:JetBrains Mono,monospace;font-size:0.55rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:4px;">API Key</label>'
+    +'<input type="password" id="apikey-input" placeholder="'+esc(info.placeholder)+'" value="'+esc(existing)+'" style="width:100%;padding:10px;border:1px solid var(--border2);border-radius:4px;font-family:JetBrains Mono,monospace;font-size:0.78rem;margin-bottom:12px;background:var(--panel);color:var(--text);">'
+    +'<div style="display:flex;gap:8px;"><button class="btn btn-g btn-s" style="flex:1;" onclick="saveApiKeyUI()">Save</button><button class="btn btn-s" style="flex:1;" onclick="closeModal()">Cancel</button></div>'
+    +'<div id="apikey-help" style="font-family:JetBrains Mono,monospace;font-size:0.55rem;color:var(--text-muted);margin-top:10px;line-height:1.5;">Get your key at '+info.help+'. Without a key the app still works — AI features use the local tax guide.</div>'
+    +'</div>';
   modal.addEventListener('click',function(e){if(e.target===modal)closeModal()});
   document.body.appendChild(modal);
   setTimeout(function(){var inp=document.getElementById('apikey-input');if(inp)inp.focus()},50);
 }
+function providerChanged(){
+  var sel=document.getElementById('apikey-provider');
+  var p=sel.value;
+  var info=LLM_PROVIDERS[p];
+  var modelSel=document.getElementById('apikey-model');
+  modelSel.innerHTML=info.models.map(function(m){return '<option value="'+m+'">'+m+'</option>'}).join('');
+  if(p==='custom')modelSel.innerHTML='<option value="">your-model-name</option>';
+  document.getElementById('apikey-input').placeholder=info.placeholder;
+  document.getElementById('apikey-help').textContent='Get your key at '+info.help+'. Without a key the app still works.';
+  document.getElementById('custom-url-row').style.display=p==='custom'?'block':'none';
+}
 function closeModal(){var m=document.querySelector('.fa-modal');if(m)m.remove()}
 function saveApiKeyUI(){
   var inp=document.getElementById('apikey-input');
+  var provSel=document.getElementById('apikey-provider');
+  var modelSel=document.getElementById('apikey-model');
+  var customUrlInp=document.getElementById('apikey-custom-url');
   if(!inp)return;
   var v=inp.value.trim();
   setApiKey(v);
-  toast(v?'API key saved':'API key cleared');
+  setProvider(provSel.value);
+  var m=modelSel.value.trim();if(m)setModel(m);
+  if(customUrlInp&&customUrlInp.value.trim())setCustomUrl(customUrlInp.value.trim());
+  toast(v?'API settings saved ('+LLM_PROVIDERS[provSel.value].name+')':'API key cleared');
   closeModal();
   updateApiKeyIndicator();
 }
 
-// ═══ SWARM CALL (anti-hallucination architecture) ═══
-async function callClaude(sys,msg){
+// ═══ SWARM CALL (anti-hallucination architecture) — multi-provider ═══
+async function callLLMText(sys,msg){
   var key=getApiKey();
   if(!key)throw new Error('No API key set');
-  var r=await fetch("https://api.anthropic.com/v1/messages",{
-    method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "x-api-key":key,
-      "anthropic-version":"2023-06-01",
-      "anthropic-dangerous-direct-browser-access":"true"
-    },
-    body:JSON.stringify({
-      model:"claude-sonnet-4-20250514",
-      max_tokens:1500,
-      system:sys,
-      messages:[{role:"user",content:msg}]
-    })
-  });
-  if(!r.ok){
-    var errText=await r.text().catch(function(){return ''});
-    throw new Error('API '+r.status+': '+errText.slice(0,100))
+  var prov=getProvider();
+  var model=getModel();
+  var text='';
+  if(prov==='anthropic'){
+    var r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:model,max_tokens:1500,system:sys,messages:[{role:"user",content:msg}]})});
+    if(!r.ok){var et=await r.text().catch(function(){return ''});throw new Error('API '+r.status+': '+et.slice(0,100))}
+    var d=await r.json();
+    text=d.content.filter(function(i){return i.type==='text'}).map(function(i){return i.text}).join('\n');
+  } else if(prov==='google'){
+    var url=LLM_PROVIDERS.google.url+model+':generateContent?key='+key;
+    var r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({systemInstruction:{parts:[{text:sys}]},contents:[{parts:[{text:msg}]}],generationConfig:{maxOutputTokens:1500}})});
+    if(!r.ok){var et=await r.text().catch(function(){return ''});throw new Error('API '+r.status+': '+et.slice(0,100))}
+    var d=await r.json();
+    text=(d.candidates&&d.candidates[0]&&d.candidates[0].content&&d.candidates[0].content.parts||[]).map(function(p){return p.text||''}).join('\n');
+  } else {
+    // OpenAI, OpenRouter, Custom — all OpenAI-compatible
+    var endpoint=prov==='custom'?getCustomUrl():LLM_PROVIDERS[prov].url;
+    var hdrs={"Content-Type":"application/json","Authorization":"Bearer "+key};
+    if(prov==='openrouter')hdrs["HTTP-Referer"]="https://fallaccount.app";
+    var r=await fetch(endpoint,{method:"POST",headers:hdrs,body:JSON.stringify({model:model,max_tokens:1500,messages:[{role:"system",content:sys},{role:"user",content:msg}]})});
+    if(!r.ok){var et=await r.text().catch(function(){return ''});throw new Error('API '+r.status+': '+et.slice(0,100))}
+    var d=await r.json();
+    text=(d.choices&&d.choices[0]&&d.choices[0].message)?d.choices[0].message.content:'';
   }
-  var d=await r.json();
-  var text=d.content.filter(function(i){return i.type==='text'}).map(function(i){return i.text}).join('\n');
   // ζ (observe) — audit confidence based on flags
   var hasVerify=text.indexOf('[VERIFY]')>-1;
   var hasYearCheck=text.indexOf('[YEAR-CHECK]')>-1;
   var confidence=(hasVerify||hasYearCheck)?'medium':'high';
   auditLog('chat-ai',msg,text,confidence);
-  // format flags
   text=text.replace(/\[VERIFY\]/g,'<span class="ai-warn">[VERIFY]</span>');
   text=text.replace(/\[YEAR-CHECK\]/g,'<span class="ai-warn">[YEAR-CHECK]</span>');
-  // θ (format) — render markdown
   return text.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/£([\d,]+)/g,'<span class="ai-rate">£$1</span>').replace(/\n/g,'<br>')
 }
+// Backward compat alias
+var callClaude=callLLMText;
 
 // ═══ AUDIT LOG — every AI decision stored for HMRC defensibility ═══
 async function auditLog(agent,input,output,confidence){
@@ -1310,7 +1361,9 @@ function updateApiKeyIndicator(){
   var el=document.getElementById('apikey-indicator');
   if(!el)return;
   var hasKey=!!getApiKey();
-  el.innerHTML=hasKey?'<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--emerald);margin-left:4px;vertical-align:middle;"></span>':'<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--amber);margin-left:4px;vertical-align:middle;"></span>';
+  var prov=getProvider();
+  var provName=LLM_PROVIDERS[prov]?LLM_PROVIDERS[prov].name.split(' ')[0]:'API';
+  el.innerHTML=hasKey?'<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--emerald);margin-left:4px;vertical-align:middle;" title="'+provName+' connected"></span>':'<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--amber);margin-left:4px;vertical-align:middle;"></span>';
 }
 
 function localAns(q){var ql=q.toLowerCase();var m=guide.find(function(e){return e.q.toLowerCase().includes(ql)||ql.split(' ').some(function(w){return w.length>3&&e.q.toLowerCase().includes(w)})});if(m)return m.a.replace(/class="rate"/g,'class="ai-rate"').replace(/class="warn"/g,'class="ai-warn"').replace(/class="ref"/g,'class="ai-ref"');return'Ask about mileage, home office, phone, software, deductions, tax rates, MTD, or check the Tax Guide.'}
@@ -1330,14 +1383,14 @@ function processReceiptFile(file){
     var resultDiv=document.getElementById('receipt-result');resultDiv.style.display='block';
     resultDiv.innerHTML='<div style="text-align:center;padding:12px;color:var(--text-muted);">🤖 AI reading receipt...</div>';
     var base64=e.target.result.split(',')[1];var mediaType=file.type||'image/jpeg';
-    callClaudeVision(base64,mediaType,'receipt').then(function(r){
+    callLLMVision(base64,mediaType,'receipt').then(function(r){
       var rid=Date.now();window._pendingReceipts=window._pendingReceipts||{};window._pendingReceipts[rid]={amt:r.amount,desc:r.vendor,cat:r.category};
       resultDiv.innerHTML='<div class="receipt-result"><div style="font-size:0.82rem;font-weight:700;color:var(--emerald);margin-bottom:8px;">✓ Receipt Scanned</div><div style="font-size:0.82rem;color:var(--text-dim);line-height:1.8;">'+r.html+'</div><button class="btn btn-g btn-s" style="margin-top:8px;" onclick="addReceiptTxn('+rid+',this)">+ Add to Transactions</button></div>'
     }).catch(function(err){
       var msg=err&&err.message?err.message:'Unknown error';
       var hint='';
       if(msg.indexOf('API key')>-1){hint='<br><button class="btn btn-s" style="margin-top:8px;" onclick="showApiKeyModal()">🔑 Set API Key</button>'}
-      else if(msg.indexOf('401')>-1){hint='<br>Your API key appears invalid. <button class="btn btn-s" style="margin-top:8px;" onclick="showApiKeyModal()">🔑 Update Key</button>'}
+      else if(msg.indexOf('401')>-1||msg.indexOf('403')>-1){hint='<br>Your API key appears invalid. <button class="btn btn-s" style="margin-top:8px;" onclick="showApiKeyModal()">🔑 Update Key</button>'}
       else if(msg.indexOf('429')>-1){hint='<br>Rate limit hit — wait a moment and try again.'}
       else if(msg.indexOf('529')>-1||msg.indexOf('overloaded')>-1){hint='<br>API is overloaded — try again in a minute.'}
       resultDiv.innerHTML='<div class="receipt-result"><div style="color:var(--amber);font-size:0.78rem;">⚠ '+esc(msg)+hint+'</div><div style="font-size:0.72rem;color:var(--text-muted);margin-top:6px;">Or add manually via Transactions page.</div></div>'
@@ -1345,31 +1398,38 @@ function processReceiptFile(file){
   };reader.readAsDataURL(file)
 }
 
-async function callClaudeVision(base64,mediaType,mode){
+async function callLLMVision(base64,mediaType,mode){
   var key=getApiKey();
   if(!key)throw new Error('No API key set');
+  var prov=getProvider();
+  var model=getModel();
   // α (scaffold) + β (build) + δ (run) + ζ (observe): receipt extraction with confidence
   var prompt=mode==='receipt'?
     'You are the receipt-processing swarm (α·β·δ·ε·ζ). Read this receipt/financial image.\n\nα scaffold: identify document type and completeness\nβ build: extract {vendor, date, total_amount}\nδ run: determine UK sole trader category (Software, Travel, Office, Phone, Insurance, Food, Equipment, Marketing, Professional, Other)\nε gate: is it claimable? (client entertaining NEVER allowable, food only if travel, home office allowable)\nζ observe: rate your CONFIDENCE per field (high/medium/low)\n\nReturn ONLY JSON:\n{"vendor":"...","date":"...","amount":-00.00,"category":"...","claimable":true/false,"confidence":{"vendor":"high","amount":"high","category":"medium","date":"high"},"warnings":["any uncertainty or concerns"],"summary":"one-line HTML summary"}\n\nAmount NEGATIVE for expenses. If you cannot read a field reliably, set confidence to "low" and include in warnings. NEVER fabricate values.':
     'You are the bank-parser swarm (α·β·δ·ζ). Read this financial document/screenshot. Extract ALL transactions.\n\nReturn ONLY JSON array of transactions:\n[{"date":"...","desc":"...","amount":0.00,"category":"...","claimable":true/false,"confidence":"high|medium|low"}]\n\nIncome = positive, expenses = negative. UK sole trader categories. Mark "low" confidence for any blurred/unclear row. NO markdown fences.';
 
-  var r=await fetch("https://api.anthropic.com/v1/messages",{
-    method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "x-api-key":key,
-      "anthropic-version":"2023-06-01",
-      "anthropic-dangerous-direct-browser-access":"true"
-    },
-    body:JSON.stringify({
-      model:"claude-sonnet-4-20250514",
-      max_tokens:1500,
-      messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:mediaType,data:base64}},{type:"text",text:prompt}]}]
-    })
-  });
-  if(!r.ok){var et=await r.text().catch(function(){return ''});throw new Error('API '+r.status+': '+et.slice(0,100))}
-  var d=await r.json();
-  var raw=d.content.filter(function(i){return i.type==='text'}).map(function(i){return i.text}).join('');
+  var raw='';
+  if(prov==='anthropic'){
+    var r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:model,max_tokens:1500,messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:mediaType,data:base64}},{type:"text",text:prompt}]}]})});
+    if(!r.ok){var et=await r.text().catch(function(){return ''});throw new Error('API '+r.status+': '+et.slice(0,100))}
+    var d=await r.json();
+    raw=d.content.filter(function(i){return i.type==='text'}).map(function(i){return i.text}).join('');
+  } else if(prov==='google'){
+    var url=LLM_PROVIDERS.google.url+model+':generateContent?key='+key;
+    var r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{inlineData:{mimeType:mediaType,data:base64}},{text:prompt}]}],generationConfig:{maxOutputTokens:1500}})});
+    if(!r.ok){var et=await r.text().catch(function(){return ''});throw new Error('API '+r.status+': '+et.slice(0,100))}
+    var d=await r.json();
+    raw=(d.candidates&&d.candidates[0]&&d.candidates[0].content&&d.candidates[0].content.parts||[]).map(function(p){return p.text||''}).join('');
+  } else {
+    // OpenAI, OpenRouter, Custom — all OpenAI-compatible with vision
+    var endpoint=prov==='custom'?getCustomUrl():LLM_PROVIDERS[prov].url;
+    var hdrs={"Content-Type":"application/json","Authorization":"Bearer "+key};
+    if(prov==='openrouter')hdrs["HTTP-Referer"]="https://fallaccount.app";
+    var r=await fetch(endpoint,{method:"POST",headers:hdrs,body:JSON.stringify({model:model,max_tokens:1500,messages:[{role:"user",content:[{type:"image_url",image_url:{url:"data:"+mediaType+";base64,"+base64}},{type:"text",text:prompt}]}]})});
+    if(!r.ok){var et=await r.text().catch(function(){return ''});throw new Error('API '+r.status+': '+et.slice(0,100))}
+    var d=await r.json();
+    raw=(d.choices&&d.choices[0]&&d.choices[0].message)?d.choices[0].message.content:'';
+  }
   // Strip markdown fences + extract JSON object/array from any surrounding text
   var clean=raw.replace(/```json|```/g,'').trim();
   // If AI wrapped JSON in prose, try to extract the JSON block
@@ -1449,7 +1509,7 @@ function handleDropFiles(files){
     var reader=new FileReader();
     reader.onload=function(e){
       var base64=e.target.result.split(',')[1];
-      callClaudeVision(base64,file.type||'image/jpeg','bulk').then(function(txns){
+      callLLMVision(base64,file.type||'image/jpeg','bulk').then(function(txns){
         if(!Array.isArray(txns))txns=[txns];
         var added=0;
         var promises=txns.map(function(t){
@@ -1502,23 +1562,30 @@ async function parseBank(){
   try{
     var key=getApiKey();
     if(!key)throw new Error('No API key set');
-    var r=await fetch("https://api.anthropic.com/v1/messages",{
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json",
-        "x-api-key":key,
-        "anthropic-version":"2023-06-01",
-        "anthropic-dangerous-direct-browser-access":"true"
-      },
-      body:JSON.stringify({
-        model:"claude-sonnet-4-20250514",
-        max_tokens:2000,
-        messages:[{role:"user",content:'You are the CSV-parsing swarm (α·β·δ·ζ). Categorise for UK sole trader. ONLY JSON array. Each: {"date","desc","amount"(number),"category","claimable"(bool),"confidence":"high|medium|low"}. Income=positive, expense=negative. Mark "low" confidence for unclear rows. No markdown.\n\n'+csv}]
-      })
-    });
-    if(!r.ok)throw new Error('API '+r.status);
-    var d=await r.json();
-    var t=d.content.filter(function(i){return i.type==='text'}).map(function(i){return i.text}).join('');
+    var csvPrompt='You are the CSV-parsing swarm (α·β·δ·ζ). Categorise for UK sole trader. ONLY JSON array. Each: {"date","desc","amount"(number),"category","claimable"(bool),"confidence":"high|medium|low"}. Income=positive, expense=negative. Mark "low" confidence for unclear rows. No markdown.\n\n'+csv;
+    var prov=getProvider();
+    var model=getModel();
+    var t='';
+    if(prov==='anthropic'){
+      var r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:model,max_tokens:2000,messages:[{role:"user",content:csvPrompt}]})});
+      if(!r.ok)throw new Error('API '+r.status);
+      var d=await r.json();
+      t=d.content.filter(function(i){return i.type==='text'}).map(function(i){return i.text}).join('');
+    } else if(prov==='google'){
+      var url=LLM_PROVIDERS.google.url+model+':generateContent?key='+key;
+      var r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:csvPrompt}]}],generationConfig:{maxOutputTokens:2000}})});
+      if(!r.ok)throw new Error('API '+r.status);
+      var d=await r.json();
+      t=(d.candidates&&d.candidates[0]&&d.candidates[0].content&&d.candidates[0].content.parts||[]).map(function(p){return p.text||''}).join('');
+    } else {
+      var endpoint=prov==='custom'?getCustomUrl():LLM_PROVIDERS[prov].url;
+      var hdrs={"Content-Type":"application/json","Authorization":"Bearer "+key};
+      if(prov==='openrouter')hdrs["HTTP-Referer"]="https://fallaccount.app";
+      var r=await fetch(endpoint,{method:"POST",headers:hdrs,body:JSON.stringify({model:model,max_tokens:2000,messages:[{role:"user",content:csvPrompt}]})});
+      if(!r.ok)throw new Error('API '+r.status);
+      var d=await r.json();
+      t=(d.choices&&d.choices[0]&&d.choices[0].message)?d.choices[0].message.content:'';
+    }
     var p=JSON.parse(t.replace(/```json|```/g,'').trim());
     auditLog('csv-swarm',{rows:csv.split('\n').length},{parsed:p.length},'batch');
     pendingBankTxns=p;
@@ -1700,7 +1767,9 @@ function dlBlob(content,type,filename){var blob=new Blob([content],{type:type});
   initDropZone();
 
   // AI Chat
-  aiConvo.push({role:'bot',text:'Welcome to FallAccount Elite v4 — 8+1 Swarm. Your sovereign tax advisor for 2026/27'+(biz.name?' — trained on <strong>'+esc(biz.name)+'</strong>':'')+'. '+(getApiKey()?'Ask anything. Drop receipts anywhere or paste with Ctrl+V.':'<span style="color:var(--amber);">No API key set — click 🔑 in the sidebar to enable AI features.</span>')});
+  var _provLabel=LLM_PROVIDERS[getProvider()]?LLM_PROVIDERS[getProvider()].name.split('(')[0].trim():'AI';
+  aiConvo.push({role:'bot',text:'Welcome to FallAccount Elite v4 — 8+1 Swarm. Your sovereign tax advisor for 2026/27'+(biz.name?' — trained on <strong>'+esc(biz.name)+'</strong>':'')+'. '+(getApiKey()?'<span style="color:var(--emerald);">'+_provLabel+' connected.</span> Ask anything. Drop receipts anywhere or paste with Ctrl+V.':'<span style="color:var(--amber);">No API key set — click 🔑 in the sidebar to connect any LLM (OpenAI, Anthropic, Google, OpenRouter).</span>')});
+  var _chatSub=document.getElementById('chat-provider-sub');if(_chatSub&&getApiKey())_chatSub.textContent=_provLabel+' · '+getModel()+' · UK tax expert';
   rChat();
 
   // Chat events
