@@ -17,7 +17,7 @@ A complete accounting autopilot for UK sole traders that runs entirely in your b
 - 📝 **Audit trail** — every AI decision logged for HMRC defensibility
 - 🔒 **Truly sovereign** — IndexedDB storage, no telemetry, no cloud, no lock-in
 
-**Saves £2-5k/year** versus QuickBooks + accountant for a sole trader.
+Replaces QuickBooks + accountant for a sole trader.
 
 ---
 
@@ -163,41 +163,6 @@ Eighteen months ago I couldn't code. Today I ship production AI systems as singl
 - Software you rent forever
 
 ---
-
-## Pricing
-
-| Tier | Price | For |
-|------|-------|-----|
-| **Free** | £0 | FallAccount Elite (this tool) + offline tax guide |
-| **£97 one-time** | £97 | Elite with extended support + first-month Claude credits |
-| **£297 one-time** | £297 | Full autopilot suite — FallAccount + FallSDR + FallBrief |
-| **£2,497 one-time** | £2,497 | Bespoke adaptation + full Sodor stack + training |
-| **£10k+** | Custom | Enterprise adaptations, custom AI, Konai runtime integration |
-
-**All tiers are one-time.** No subscriptions, ever. Versions ship when ready. You own what you buy.
-
----
-
-## Hiring me
-
-I take on **two to three builds per month.** I don't take on urgent rescue projects or "shape it after we start" engagements — I build from specifications with compression-first architecture, which requires the client to have some clarity about what they want.
-
-**Good fits:**
-- Single-operator or small-team businesses needing to eliminate SaaS sprawl
-- Solicitors, accountants, consultants, sole traders, indie professionals
-- Anyone tired of subscription creep and vendor lock-in
-- Teams that want AI doing work, not AI doing demos
-- Projects where "runs on one computer, owned forever" is a feature not a limitation
-
-**Not a fit:**
-- "We need a ChatGPT clone but for [our vertical]"
-- Real-time collaborative platforms requiring central servers
-- Projects where the client wants to outsource the thinking too
-- Budget-first, scope-later briefs
-
-**Rate:** £50-75/hour for hourly consulting, or fixed-price from £2,497 for full builds on my sovereign pattern.
-
-**Contact:** [ai-nativesolutions.com](https://ai-nativesolutions.com)
 
 ---
 
