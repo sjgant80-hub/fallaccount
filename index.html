@@ -1,0 +1,1520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FallAccount Elite v2 — 8+1 Swarm Accounting Autopilot</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --bg: #f7f6f3; --surface: #ffffff; --panel: #fafaf8;
+  --border: #e8e6e1; --border2: #d4d1cb;
+  --navy: #1a2332; --navy-mid: #2d3a4d; --navy-light: #eef1f5;
+  --emerald: #0d7c5f; --emerald-dark: #0a6049; --emerald-light: #edf8f4;
+  --red: #c4342d; --red-light: #fdf0ef;
+  --amber: #c07d1a; --amber-light: #fdf6eb;
+  --blue: #2563b0; --blue-light: #eef3fc;
+  --text: #1a1e24; --text-dim: #5c6370; --text-muted: #9ca3ad;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+}
+
+[data-theme="dark"] {
+  --bg: #0c0d10; --surface: #16181e; --panel: #1c1e26;
+  --border: #2a2d36; --border2: #3a3d48;
+  --navy: #c8ccd8; --navy-mid: #9ca3b4; --navy-light: #1e2028;
+  --text: #d4d6de; --text-dim: #8b8f9e; --text-muted: #565968;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+  --emerald-light: rgba(13,124,95,0.12); --red-light: rgba(196,52,45,0.12);
+  --amber-light: rgba(192,125,26,0.12); --blue-light: rgba(37,99,176,0.12);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 15px; }
+body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-serif; min-height: 100vh; -webkit-font-smoothing: antialiased; transition: background 0.3s, color 0.3s; }
+
+.app-shell { display: grid; grid-template-columns: 210px 1fr; min-height: 100vh; }
+
+/* ═══ SIDEBAR ═══ */
+.sidebar { background: #1a2332; padding: 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; }
+[data-theme="dark"] .sidebar { background: #0e1014; }
+.sb-brand { padding: 18px 18px 14px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.sb-logo { font-family: 'DM Serif Display', serif; font-size: 1.15rem; color: white; }
+.sb-logo span { color: var(--emerald); font-style: italic; }
+.sb-tag { font-family: 'JetBrains Mono', monospace; font-size: 0.48rem; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.25); margin-top: 4px; }
+.sb-section { font-family: 'JetBrains Mono', monospace; font-size: 0.48rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255,255,255,0.2); padding: 14px 18px 4px; }
+.sb-item { display: flex; align-items: center; gap: 9px; padding: 9px 18px; cursor: pointer; font-size: 0.78rem; font-weight: 500; color: rgba(255,255,255,0.45); border-left: 3px solid transparent; transition: all 0.15s; }
+.sb-item:hover { color: rgba(255,255,255,0.75); background: rgba(255,255,255,0.04); }
+.sb-item.active { color: white; border-left-color: var(--emerald); background: rgba(255,255,255,0.07); font-weight: 600; }
+.sb-icon { font-size: 0.9rem; width: 18px; text-align: center; }
+.sb-badge { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.48rem; font-weight: 600; padding: 2px 6px; border-radius: 8px; }
+.sb-badge.g { background: var(--emerald); color: white; }
+.sb-badge.a { background: var(--amber); color: white; }
+.sb-footer { margin-top: auto; padding: 14px 18px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 0.55rem; color: rgba(255,255,255,0.15); font-family: 'JetBrains Mono', monospace; }
+.theme-toggle { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.6rem; font-family: 'JetBrains Mono', monospace; margin-top: 8px; width: 100%; transition: all 0.15s; }
+.theme-toggle:hover { background: rgba(255,255,255,0.1); color: white; }
+
+/* ═══ MAIN ═══ */
+.main { padding: 24px 28px; overflow-y: auto; max-height: 100vh; }
+.page { display: none; }
+.page.active { display: block; }
+.page-header { margin-bottom: 20px; }
+.page-title { font-family: 'DM Serif Display', serif; font-size: 1.4rem; color: var(--navy); margin-bottom: 3px; }
+.page-sub { font-size: 0.78rem; color: var(--text-muted); }
+
+/* ═══ CARDS / KPIs ═══ */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; box-shadow: var(--shadow); margin-bottom: 14px; transition: background 0.3s, border-color 0.3s; }
+.card-h { padding: 12px 18px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.card-t { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--navy); }
+.card-a { font-size: 0.65rem; color: var(--emerald); cursor: pointer; font-weight: 600; }
+.card-b { padding: 16px 18px; }
+.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; padding: 14px; box-shadow: var(--shadow); }
+.kpi-label { font-family: 'JetBrains Mono', monospace; font-size: 0.52rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 5px; }
+.kpi-val { font-family: 'DM Serif Display', serif; font-size: 1.4rem; line-height: 1; }
+.kpi-note { font-size: 0.65rem; color: var(--text-muted); margin-top: 3px; }
+
+/* ═══ TRANSACTIONS ═══ */
+.txn { display: grid; grid-template-columns: 72px 1fr auto; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); align-items: center; font-size: 0.8rem; }
+.txn.has-del { grid-template-columns: 72px 1fr auto auto; }
+.txn:last-child { border-bottom: none; }
+.txn-date { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text-muted); }
+.txn-desc { font-weight: 500; }
+.txn-cat { font-size: 0.62rem; color: var(--text-muted); }
+.txn-amt { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; font-weight: 600; text-align: right; }
+.txn-amt.inc { color: var(--emerald); }
+.txn-amt.exp { color: var(--red); }
+.txn-del { background: none; border: 1px solid var(--border); color: var(--text-muted); font-size: 0.6rem; padding: 2px 6px; border-radius: 3px; cursor: pointer; opacity: 0.4; transition: all 0.15s; }
+.txn-del:hover { opacity: 1; border-color: var(--red); color: var(--red); }
+
+/* ═══ INVOICES ═══ */
+.inv { display: grid; grid-template-columns: 80px 1fr auto auto; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); align-items: center; font-size: 0.78rem; }
+.inv:last-child { border-bottom: none; }
+.inv-id { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text-muted); }
+.inv-client { font-weight: 600; color: var(--navy); }
+.inv-amt { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+.inv-status { font-size: 0.5rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 7px; border-radius: 2px; }
+.inv-status.paid { background: var(--emerald-light); color: var(--emerald); }
+.inv-status.pending { background: var(--amber-light); color: var(--amber); }
+.inv-status.overdue { background: var(--red-light); color: var(--red); }
+
+/* ═══ DEDUCTIONS ═══ */
+.ded { display: grid; grid-template-columns: 1fr auto; gap: 10px; padding: 9px 14px; background: var(--emerald-light); border: 1px solid var(--border); border-left: 3px solid var(--emerald); border-radius: 4px; margin-bottom: 5px; align-items: center; }
+.ded-name { font-size: 0.8rem; font-weight: 600; color: var(--navy); }
+.ded-desc { font-size: 0.65rem; color: var(--text-dim); }
+.ded-save { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; font-weight: 600; color: var(--emerald); text-align: right; }
+.sug-ded { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; padding: 9px 14px; background: var(--amber-light); border: 1px solid var(--border); border-left: 3px solid var(--amber); border-radius: 4px; margin-bottom: 5px; align-items: center; }
+
+/* ═══ QUARTERS ═══ */
+.q-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+.q-box { text-align: center; padding: 14px 8px; background: var(--panel); border: 1px solid var(--border); border-radius: 5px; }
+.q-box.done { background: var(--emerald-light); border-color: var(--emerald); }
+.q-box.current { border-color: var(--navy); border-width: 2px; }
+.q-box.future { opacity: 0.5; }
+.q-label { font-family: 'JetBrains Mono', monospace; font-size: 0.52rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 3px; }
+.q-status { font-size: 0.62rem; font-weight: 600; }
+
+/* ═══ CHART ═══ */
+.chart-container { height: 200px; display: flex; align-items: flex-end; gap: 4px; padding: 10px 0; }
+.chart-bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.chart-bar { width: 100%; border-radius: 3px 3px 0 0; transition: height 0.6s ease; min-height: 2px; }
+.chart-bar.inc { background: var(--emerald); }
+.chart-bar.exp { background: var(--red); opacity: 0.7; }
+.chart-month { font-family: 'JetBrains Mono', monospace; font-size: 0.5rem; color: var(--text-muted); letter-spacing: 0.05em; }
+.chart-legend { display: flex; gap: 16px; justify-content: center; margin-top: 8px; font-size: 0.62rem; color: var(--text-muted); }
+.chart-legend-dot { width: 8px; height: 8px; border-radius: 2px; display: inline-block; margin-right: 4px; vertical-align: middle; }
+
+/* ═══ AI CHAT ═══ */
+.chat-box { background: #1a2332; border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; height: 520px; }
+[data-theme="dark"] .chat-box { background: #0e1014; }
+.chat-header { padding: 12px 16px; background: rgba(255,255,255,0.04); border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; gap: 10px; }
+.chat-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--emerald); box-shadow: 0 0 8px var(--emerald); animation: blink 2s ease-in-out infinite; }
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+.chat-title { font-size: 0.78rem; font-weight: 600; color: white; }
+.chat-sub { font-size: 0.55rem; color: rgba(255,255,255,0.35); }
+.chat-msgs { flex: 1; padding: 14px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.chat-msg { max-width: 85%; animation: fadeUp 0.3s ease; }
+.chat-msg.bot { align-self: flex-start; }
+.chat-msg.user { align-self: flex-end; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; } }
+.bubble { padding: 10px 14px; font-size: 0.78rem; line-height: 1.65; border-radius: 8px; }
+.chat-msg.bot .bubble { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.85); border: 1px solid rgba(255,255,255,0.06); }
+.chat-msg.user .bubble { background: var(--emerald); color: white; }
+.bubble strong { color: white; }
+.bubble .ai-rate { color: #5eead4; font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+.bubble .ai-warn { color: #fca5a5; }
+.bubble .ai-ref { display: block; margin-top: 5px; font-size: 0.55rem; color: rgba(255,255,255,0.25); font-family: 'JetBrains Mono', monospace; }
+.chat-quick { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px 14px; border-top: 1px solid rgba(255,255,255,0.04); }
+.qbtn { font-family: 'JetBrains Mono', monospace; font-size: 0.52rem; padding: 4px 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 3px; color: rgba(255,255,255,0.45); cursor: pointer; transition: all 0.15s; }
+.qbtn:hover { background: rgba(255,255,255,0.1); color: white; border-color: var(--emerald); }
+.chat-input-row { display: flex; border-top: 1px solid rgba(255,255,255,0.06); }
+.chat-input { flex: 1; padding: 12px 16px; font-family: 'Outfit', sans-serif; font-size: 0.82rem; border: none; background: rgba(255,255,255,0.03); color: white; outline: none; }
+.chat-input::placeholder { color: rgba(255,255,255,0.2); }
+.chat-send { background: var(--emerald); border: none; color: white; padding: 12px 18px; font-family: 'Outfit', sans-serif; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; }
+
+/* ═══ TAX GUIDE ═══ */
+.tg-search { width: 100%; padding: 11px 16px; font-family: 'Outfit', sans-serif; font-size: 0.88rem; border: 2px solid var(--border2); border-radius: 5px; background: var(--bg); color: var(--text); outline: none; margin-bottom: 12px; }
+.tg-search:focus { border-color: var(--emerald); }
+.tg-cats { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 12px; }
+.tg-cat { font-family: 'JetBrains Mono', monospace; font-size: 0.52rem; font-weight: 600; text-transform: uppercase; padding: 4px 9px; background: var(--panel); border: 1px solid var(--border); border-radius: 3px; cursor: pointer; color: var(--text-dim); transition: all 0.15s; }
+.tg-cat:hover { border-color: var(--emerald); color: var(--emerald); }
+.tg-cat.active { background: var(--emerald); color: white; border-color: var(--emerald); }
+.tg-entry { background: var(--panel); border: 1px solid var(--border); border-radius: 4px; margin-bottom: 5px; overflow: hidden; }
+.tg-q { padding: 11px 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.tg-q-text { font-size: 0.82rem; font-weight: 600; color: var(--navy); flex: 1; }
+.tg-tag { font-family: 'JetBrains Mono', monospace; font-size: 0.48rem; font-weight: 600; text-transform: uppercase; padding: 2px 7px; border-radius: 2px; flex-shrink: 0; }
+.tg-tag.yes { background: var(--emerald-light); color: var(--emerald); }
+.tg-tag.no { background: var(--red-light); color: var(--red); }
+.tg-tag.partial { background: var(--amber-light); color: var(--amber); }
+.tg-tag.info { background: var(--navy-light); color: var(--navy); }
+.tg-a { display: none; padding: 0 16px 12px; font-size: 0.78rem; color: var(--text-dim); line-height: 1.75; border-top: 1px solid var(--border); padding-top: 10px; }
+.tg-a strong { color: var(--navy); }
+.tg-a .rate { font-family: 'JetBrains Mono', monospace; color: var(--emerald); font-weight: 600; }
+.tg-a .warn { color: var(--red); font-weight: 600; }
+.tg-a .ref { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--text-muted); display: block; margin-top: 5px; }
+
+/* ═══ FORMS / BUTTONS ═══ */
+.field { margin-bottom: 12px; }
+.label { font-family: 'JetBrains Mono', monospace; font-size: 0.55rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 4px; }
+.input, .textarea, .bank-textarea { width: 100%; padding: 9px 13px; font-family: 'Outfit', sans-serif; font-size: 0.85rem; border: 1.5px solid var(--border2); border-radius: 4px; background: var(--bg); color: var(--text); outline: none; transition: border-color 0.15s; }
+.input:focus, .textarea:focus, .bank-textarea:focus { border-color: var(--emerald); }
+.textarea { min-height: 70px; resize: vertical; }
+.bank-textarea { min-height: 130px; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; }
+.btn { font-family: 'Outfit', sans-serif; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 5px; }
+.btn-g { background: var(--emerald); color: white; }
+.btn-g:hover { background: #0a6049; }
+.btn-n { background: #1a2332; color: white; }
+.btn-o { background: transparent; border: 2px solid var(--border2); color: var(--text-dim); }
+.btn-o:hover { border-color: var(--navy); color: var(--navy); }
+.btn-s { padding: 6px 12px; font-size: 0.62rem; }
+.btn-r { background: var(--red); color: white; }
+.btn-r:hover { background: #a02d27; }
+
+/* ═══ RECEIPT / DROP ZONE ═══ */
+.receipt-zone { border: 2px dashed var(--border2); border-radius: 8px; padding: 30px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; }
+.receipt-zone:hover { border-color: var(--emerald); background: var(--emerald-light); }
+.receipt-zone.dragover { border-color: var(--emerald); background: var(--emerald-light); transform: scale(1.01); }
+.receipt-preview { max-width: 100%; max-height: 250px; border-radius: 4px; margin-top: 12px; }
+.receipt-result { margin-top: 12px; padding: 14px; background: var(--emerald-light); border: 1px solid var(--border); border-left: 3px solid var(--emerald); border-radius: 4px; }
+
+/* ═══ UNIVERSAL DROP ZONE ═══ */
+.universal-drop { position: fixed; inset: 0; background: rgba(13,124,95,0.92); z-index: 9999; display: none; justify-content: center; align-items: center; flex-direction: column; gap: 12px; backdrop-filter: blur(8px); }
+.universal-drop.active { display: flex; }
+.universal-drop-inner { text-align: center; color: white; }
+.universal-drop-icon { font-size: 4rem; margin-bottom: 12px; animation: dropPulse 1.5s ease infinite; }
+@keyframes dropPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+.universal-drop-title { font-family: 'DM Serif Display', serif; font-size: 1.8rem; margin-bottom: 6px; }
+.universal-drop-sub { font-size: 0.88rem; opacity: 0.7; }
+
+/* ═══ TOAST ═══ */
+.toast { position: fixed; bottom: 24px; right: 24px; background: var(--navy); color: white; padding: 14px 22px; border-radius: 6px; font-size: 0.82rem; font-weight: 600; z-index: 10000; transform: translateY(100px); opacity: 0; transition: all 0.3s ease; box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.success { border-left: 4px solid var(--emerald); }
+.toast.error { border-left: 4px solid var(--red); }
+.toast.warn { border-left: 4px solid var(--amber); }
+
+/* ═══ INVOICE GENERATOR ═══ */
+.inv-preview { background: white; border: 1px solid var(--border); border-radius: 4px; padding: 32px; color: #1a1e24; box-shadow: var(--shadow); }
+.inv-preview h2 { font-family: 'DM Serif Display', serif; font-size: 1.3rem; margin-bottom: 4px; }
+.inv-preview table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.82rem; }
+.inv-preview th { text-align: left; padding: 8px; border-bottom: 2px solid #1a2332; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #5c6370; }
+.inv-preview td { padding: 8px; border-bottom: 1px solid #e8e6e1; }
+
+/* ═══ GRIDS / WELCOME ═══ */
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.welcome { text-align: center; padding: 60px 40px; }
+.welcome-icon { font-size: 3rem; margin-bottom: 16px; }
+.welcome-title { font-family: 'DM Serif Display', serif; font-size: 1.6rem; color: var(--navy); margin-bottom: 8px; }
+.welcome-sub { font-size: 0.88rem; color: var(--text-dim); max-width: 480px; margin: 0 auto 24px; line-height: 1.7; }
+.welcome-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; max-width: 600px; margin: 0 auto 28px; text-align: left; }
+.step { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; padding: 18px; box-shadow: var(--shadow); }
+.step-num { font-family: 'JetBrains Mono', monospace; font-size: 0.55rem; font-weight: 700; color: var(--emerald); letter-spacing: 0.1em; margin-bottom: 6px; }
+.step-title { font-size: 0.85rem; font-weight: 700; color: var(--navy); margin-bottom: 3px; }
+.step-desc { font-size: 0.72rem; color: var(--text-dim); line-height: 1.6; }
+
+/* ═══ SET-ASIDE PULSE ═══ */
+.set-aside-box { background: var(--emerald-light); border: 2px solid var(--emerald); border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 14px; }
+.set-aside-amount { font-family: 'DM Serif Display', serif; font-size: 2.2rem; color: var(--emerald); }
+.set-aside-label { font-size: 0.72rem; font-weight: 700; color: var(--emerald); letter-spacing: 0.06em; text-transform: uppercase; margin-top: 4px; }
+.set-aside-progress { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin-top: 10px; }
+.set-aside-fill { height: 100%; background: var(--emerald); border-radius: 4px; transition: width 0.8s ease; }
+
+/* ═══ DATA MANAGEMENT ═══ */
+.data-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+/* ═══ PROCESSING QUEUE ═══ */
+.proc-queue { margin-top: 14px; }
+.proc-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--panel); border: 1px solid var(--border); border-radius: 4px; margin-bottom: 4px; font-size: 0.78rem; }
+.proc-status { font-family: 'JetBrains Mono', monospace; font-size: 0.55rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+.proc-status.done { color: var(--emerald); }
+.proc-status.working { color: var(--amber); }
+.proc-status.error { color: var(--red); }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+@media (max-width: 800px) {
+  .app-shell { grid-template-columns: 1fr; }
+  .sidebar { position: fixed; left: -210px; z-index: 200; transition: left 0.3s; }
+  .sidebar.open { left: 0; }
+  .kpi-row { grid-template-columns: 1fr 1fr; }
+  .q-row, .welcome-steps { grid-template-columns: 1fr 1fr; }
+  .g2, .g3 { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- UNIVERSAL DROP ZONE OVERLAY -->
+<div class="universal-drop" id="universal-drop">
+  <div class="universal-drop-inner">
+    <div class="universal-drop-icon">📎</div>
+    <div class="universal-drop-title">Drop anything</div>
+    <div class="universal-drop-sub">Receipts · Bank screenshots · PayPal notifications · Invoices · Any financial image</div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<div class="app-shell">
+<button id="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open');document.getElementById('mob-ov').classList.toggle('show')" style="display:none;position:fixed;top:10px;left:10px;z-index:300;background:#1a2332;color:white;border:1px solid rgba(255,255,255,0.15);border-radius:4px;padding:8px 12px;font-size:1rem;cursor:pointer;">☰</button>
+<div id="mob-ov" onclick="document.getElementById('sidebar').classList.remove('open');this.classList.remove('show')" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:150;"></div>
+<style>@media(max-width:800px){#mobile-toggle{display:block!important}#mob-ov.show{display:block!important}}</style>
+
+<nav class="sidebar" id="sidebar">
+  <div class="sb-brand">
+    <div class="sb-logo">Fall<span>Account</span></div>
+    <div class="sb-tag">Sovereign Autopilot · Elite · 2026/27</div>
+  </div>
+  <div class="sb-section">Dashboard</div>
+  <div class="sb-item active" data-page="welcome"><span class="sb-icon">🏠</span> Welcome</div>
+  <div class="sb-item" data-page="overview"><span class="sb-icon">📊</span> Overview</div>
+  <div class="sb-item" data-page="transactions"><span class="sb-icon">💳</span> Transactions <span class="sb-badge g" id="txn-count-badge"></span></div>
+  <div class="sb-item" data-page="invoices"><span class="sb-icon">📄</span> Invoices</div>
+  <div class="sb-item" data-page="newinv"><span class="sb-icon">✏️</span> Create Invoice</div>
+  <div class="sb-section">AI Autopilot</div>
+  <div class="sb-item" data-page="ai"><span class="sb-icon">🧠</span> AI Accountant <span class="sb-badge g">AI</span></div>
+  <div class="sb-item" data-page="dropzone"><span class="sb-icon">📎</span> Drop Zone <span class="sb-badge g">NEW</span></div>
+  <div class="sb-item" data-page="receipt"><span class="sb-icon">📷</span> Receipt Scanner</div>
+  <div class="sb-item" data-page="bank"><span class="sb-icon">🏦</span> Bank Parser</div>
+  <div class="sb-item" data-page="deductions"><span class="sb-icon">🔍</span> Deductions <span class="sb-badge g" id="ded-count-badge"></span></div>
+  <div class="sb-item" data-page="forecast"><span class="sb-icon">🧮</span> Tax Forecast</div>
+  <div class="sb-section">MTD Compliance</div>
+  <div class="sb-item" data-page="quarters"><span class="sb-icon">📋</span> Quarterly Reports</div>
+  <div class="sb-section">Reference</div>
+  <div class="sb-item" data-page="taxguide"><span class="sb-icon">📖</span> Tax Guide <span class="sb-badge g">33</span></div>
+  <div class="sb-section">Settings</div>
+  <div class="sb-item" data-page="business"><span class="sb-icon">🏢</span> My Business</div>
+  <div class="sb-item" data-page="data"><span class="sb-icon">💾</span> Data & Export</div>
+  <div class="sb-footer">
+    ◊·κ=1 · Sovereign · Your data stays here<br>
+    Built by Sodor Group · v4.0 ELITE · 8+1 Swarm
+    <button class="theme-toggle" onclick="toggleTheme()">🌓 Toggle Dark Mode</button>
+    <button class="theme-toggle" onclick="showApiKeyModal()" style="margin-top:4px;">🔑 API Key <span id="apikey-indicator"></span></button>
+    <button class="theme-toggle" onclick="showAuditLog()" style="margin-top:4px;">📋 Audit Log</button>
+  </div>
+</nav>
+
+<div class="main" id="main">
+
+<!-- WELCOME -->
+<div class="page active" id="p-welcome">
+  <div class="welcome">
+    <div class="welcome-icon">📊</div>
+    <div class="welcome-title">Welcome to FallAccount Elite</div>
+    <div class="welcome-sub">Your accounting autopilot. This file runs entirely in your browser. No cloud. No login. No subscription. Drop receipts anywhere, paste bank data, ask tax questions, generate invoices — all sovereign. Ctrl+V to paste images anywhere.</div>
+    <div class="welcome-steps">
+      <div class="step"><div class="step-num">STEP 1</div><div class="step-title">Set Up Business</div><div class="step-desc">Click "My Business" — enter your details so the AI personalises everything.</div></div>
+      <div class="step"><div class="step-num">STEP 2</div><div class="step-title">Drop Anything</div><div class="step-desc">Drag receipts anywhere, paste screenshots (Ctrl+V), or use Bank Parser for CSV data.</div></div>
+      <div class="step"><div class="step-num">STEP 3</div><div class="step-title">AI Does the Rest</div><div class="step-desc">Transactions stored. Deductions found. Tax forecast live. Books done.</div></div>
+    </div>
+    <button class="btn btn-g" onclick="goTo('business')">Set Up My Business →</button>
+  </div>
+</div>
+
+<!-- OVERVIEW -->
+<div class="page" id="p-overview">
+  <div class="page-header"><div class="page-title">Financial Overview</div><div class="page-sub">Tax Year 2026/27 · Live from your data</div></div>
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-label">Revenue YTD</div><div class="kpi-val" style="color:var(--emerald)" id="kpi-revenue">£0</div><div class="kpi-note" id="kpi-rev-note">Add transactions to begin</div></div>
+    <div class="kpi"><div class="kpi-label">Expenses YTD</div><div class="kpi-val" style="color:var(--red)" id="kpi-expenses">£0</div><div class="kpi-note" id="kpi-exp-note">—</div></div>
+    <div class="kpi"><div class="kpi-label">Taxable Profit</div><div class="kpi-val" style="color:var(--navy)" id="kpi-profit">£0</div><div class="kpi-note">After deductions</div></div>
+    <div class="kpi"><div class="kpi-label">Estimated Tax</div><div class="kpi-val" style="color:var(--amber)" id="kpi-tax">£0</div><div class="kpi-note" id="kpi-tax-note">—</div></div>
+  </div>
+  <div class="set-aside-box" id="ov-set-aside">
+    <div style="font-size:0.65rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--emerald);margin-bottom:4px;">MOVE TO TAX POT THIS MONTH</div>
+    <div class="set-aside-amount" id="ov-monthly">£0</div>
+    <div class="set-aside-label" id="ov-set-label">—</div>
+    <div class="set-aside-progress"><div class="set-aside-fill" id="ov-set-fill" style="width:0%"></div></div>
+  </div>
+  <div class="card">
+    <div class="card-h"><div class="card-t">Income vs Expenses</div></div>
+    <div class="card-b">
+      <div class="chart-container" id="overview-chart"></div>
+      <div class="chart-legend"><span><span class="chart-legend-dot" style="background:var(--emerald)"></span> Income</span><span><span class="chart-legend-dot" style="background:var(--red)"></span> Expenses</span></div>
+    </div>
+  </div>
+  <div style="font-size:0.78rem;font-weight:700;color:var(--navy);margin-bottom:8px;">MTD Quarters</div>
+  <div class="q-row" id="ov-quarters"></div>
+  <div class="g2">
+    <div class="card"><div class="card-h"><div class="card-t">🔍 Deductions Found</div><span class="card-a" onclick="goTo('deductions')">View All</span></div><div class="card-b" id="ov-deds"></div></div>
+    <div class="card"><div class="card-h"><div class="card-t">💳 Recent Transactions</div><span class="card-a" onclick="goTo('transactions')">View All</span></div><div class="card-b" id="ov-txns"></div></div>
+  </div>
+</div>
+
+<!-- TRANSACTIONS -->
+<div class="page" id="p-transactions">
+  <div class="page-header"><div class="page-title">Transactions</div><div class="page-sub" id="txn-subtitle">All income & expenses · stored in your browser</div></div>
+  <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap;">
+    <button class="btn btn-g btn-s" onclick="addManualTxn()">+ Add Manual</button>
+    <button class="btn btn-o btn-s" onclick="goTo('bank')">Import from Bank</button>
+    <button class="btn btn-o btn-s" onclick="goTo('dropzone')">Drop Zone</button>
+  </div>
+  <div class="card"><div class="card-b" id="all-txns"><div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.82rem;">No transactions yet. Import from bank, scan receipts, or add manually.</div></div></div>
+</div>
+
+<!-- INVOICES -->
+<div class="page" id="p-invoices">
+  <div class="page-header"><div class="page-title">Invoices</div><div class="page-sub" id="inv-subtitle">Track sent, paid, and overdue</div></div>
+  <div class="card"><div class="card-b" id="all-invs"><div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.82rem;">No invoices yet. Create one to get started.</div></div></div>
+  <button class="btn btn-g" onclick="goTo('newinv')" style="margin-top:4px;">+ Create New Invoice</button>
+</div>
+
+<!-- INVOICE GENERATOR -->
+<div class="page" id="p-newinv">
+  <div class="page-header"><div class="page-title">Create Invoice</div><div class="page-sub">Generate professional invoices · download as HTML · auto-saved</div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-h"><div class="card-t">Invoice Details</div></div>
+      <div class="card-b">
+        <div class="g2">
+          <div class="field"><label class="label">Invoice Number</label><input class="input" id="inv-num" value="INV-001"></div>
+          <div class="field"><label class="label">Date</label><input class="input" type="date" id="inv-date"></div>
+        </div>
+        <div class="field"><label class="label">Client Name</label><input class="input" id="inv-client" placeholder="e.g. Acme Ltd"></div>
+        <div class="field"><label class="label">Client Address</label><textarea class="textarea" id="inv-addr" placeholder="123 Business Street&#10;London EC1A 1BB" style="min-height:50px;"></textarea></div>
+        <div class="field"><label class="label">Description</label><input class="input" id="inv-desc" placeholder="e.g. Website Design & Development"></div>
+        <div class="g2">
+          <div class="field"><label class="label">Amount (£)</label><input class="input" type="number" id="inv-amount" placeholder="2400"></div>
+          <div class="field"><label class="label">Payment Terms</label><select class="input" id="inv-terms" style="appearance:auto;"><option>Due on receipt</option><option>Net 14 days</option><option>Net 30 days</option></select></div>
+        </div>
+        <button class="btn btn-g" onclick="generateInvoice()">Generate Invoice</button>
+        <button class="btn btn-o" onclick="downloadInvoice()" style="margin-left:6px;">⤓ Download HTML</button>
+        <button class="btn btn-n" onclick="saveInvoiceRecord()" style="margin-left:6px;">💾 Save to Records</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><div class="card-t">Preview</div></div>
+      <div class="card-b" id="inv-preview-area">
+        <div style="text-align:center;padding:40px;color:var(--text-muted);font-size:0.82rem;">Fill in the details and click Generate to preview your invoice.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AI ACCOUNTANT -->
+<div class="page" id="p-ai">
+  <div class="page-header"><div class="page-title">AI Accountant</div><div class="page-sub">Claude-powered · trained on UK tax law + your business</div></div>
+  <div class="chat-box">
+    <div class="chat-header"><div class="chat-dot"></div><div><div class="chat-title">FallAccount AI</div><div class="chat-sub">Claude Sonnet · UK tax expert · your data loaded</div></div></div>
+    <div class="chat-msgs" id="chat-msgs"></div>
+    <div class="chat-quick">
+      <div class="qbtn" onclick="askAI('Can I claim my phone bill?')">Phone bill?</div>
+      <div class="qbtn" onclick="askAI('How do I claim for working from home?')">Home office?</div>
+      <div class="qbtn" onclick="askAI('What are the mileage rates?')">Mileage?</div>
+      <div class="qbtn" onclick="askAI('What tax will I owe this year?')">Tax estimate?</div>
+      <div class="qbtn" onclick="askAI('When are my MTD deadlines?')">MTD deadlines?</div>
+      <div class="qbtn" onclick="askAI('What deductions am I missing?')">Missing deductions?</div>
+    </div>
+    <div class="chat-input-row"><input class="chat-input" id="ai-input" placeholder="Ask anything about UK tax..."><button class="chat-send" id="ai-send">Ask</button></div>
+  </div>
+</div>
+
+<!-- DROP ZONE -->
+<div class="page" id="p-dropzone">
+  <div class="page-header"><div class="page-title">Universal Drop Zone</div><div class="page-sub">Dump anything financial · AI reads and categorises · Ctrl+V to paste</div></div>
+  <div class="card">
+    <div class="card-h"><div class="card-t">Drop Files</div></div>
+    <div class="card-b">
+      <div class="receipt-zone" id="drop-zone-main" onclick="document.getElementById('drop-file-input').click()">
+        <input type="file" id="drop-file-input" accept="image/*" multiple style="display:none" onchange="handleDropFiles(this.files)">
+        <div style="font-size:2.5rem;margin-bottom:8px;">📎</div>
+        <div style="font-size:0.88rem;font-weight:600;color:var(--navy);">Drop files here, click to browse, or paste (Ctrl+V)</div>
+        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;">Receipts · Bank app screenshots · PayPal notifications · Any financial image</div>
+        <div style="font-size:0.62rem;color:var(--text-muted);margin-top:8px;font-family:'JetBrains Mono',monospace;">Multiple files supported · JPG, PNG, WebP</div>
+      </div>
+    </div>
+  </div>
+  <div class="proc-queue" id="drop-queue"></div>
+</div>
+
+<!-- RECEIPT SCANNER -->
+<div class="page" id="p-receipt">
+  <div class="page-header"><div class="page-title">Receipt Scanner</div><div class="page-sub">Take a photo or drag a receipt · AI reads and categorises</div></div>
+  <div class="card">
+    <div class="card-h"><div class="card-t">Scan Receipt</div></div>
+    <div class="card-b">
+      <div class="receipt-zone" id="receipt-zone" onclick="document.getElementById('receipt-file').click()">
+        <input type="file" id="receipt-file" accept="image/*" capture="environment" style="display:none" onchange="handleReceipt(this)">
+        <div style="font-size:2rem;margin-bottom:8px;">📷</div>
+        <div style="font-size:0.85rem;font-weight:600;color:var(--navy);">Tap to take photo or drop image here</div>
+        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;">Supports JPG, PNG. AI reads vendor, date, amount, and categorises automatically.</div>
+      </div>
+      <img id="receipt-img" class="receipt-preview" style="display:none;">
+      <div id="receipt-result" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- BANK PARSER -->
+<div class="page" id="p-bank">
+  <div class="page-header"><div class="page-title">Bank Statement Parser</div><div class="page-sub">Paste bank data · AI auto-categorises · import to transactions</div></div>
+  <div class="card">
+    <div class="card-h"><div class="card-t">Paste Bank Statement</div></div>
+    <div class="card-b">
+      <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:8px;">One transaction per line: Date, Description, Amount. Or paste anything — AI will figure it out.</div>
+      <textarea class="bank-textarea" id="bank-input" placeholder="15/12/2026, ADOBE CREATIVE, -49.94&#10;14/12/2026, ACME LTD, 2400.00"></textarea>
+      <div style="display:flex;gap:8px;margin-top:10px;"><button class="btn btn-g" onclick="parseBank()">🤖 Auto-Categorise</button><button class="btn btn-o" onclick="loadSample()">Load Sample</button></div>
+    </div>
+  </div>
+  <div id="bank-out" style="display:none;">
+    <div class="card"><div class="card-h"><div class="card-t">Categorised</div><span class="card-a" id="bank-stats"></span></div><div class="card-b" id="bank-results"></div></div>
+    <button class="btn btn-g" style="margin-top:8px;" onclick="importBankTxns()">✓ Import All to Transactions</button>
+  </div>
+</div>
+
+<!-- DEDUCTIONS -->
+<div class="page" id="p-deductions">
+  <div class="page-header"><div class="page-title">AI Deduction Finder</div><div class="page-sub" id="ded-subtitle">Identified from your expenses and profile</div></div>
+  <div class="card"><div class="card-h"><div class="card-t">Active Deductions</div><div class="card-a" id="ded-total">Total: £0/yr</div></div><div class="card-b" id="all-deds"></div></div>
+  <div class="card"><div class="card-h"><div class="card-t" style="color:var(--amber)">⚠ Suggested</div></div><div class="card-b" id="sug-deds"></div></div>
+</div>
+
+<!-- TAX FORECAST -->
+<div class="page" id="p-forecast">
+  <div class="page-header"><div class="page-title">Tax Forecast</div><div class="page-sub">Live estimate · recalculates from your transactions</div></div>
+  <div class="set-aside-box" id="fc-set-aside">
+    <div style="font-size:0.65rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--emerald);margin-bottom:4px;">MONTHLY TAX SET-ASIDE</div>
+    <div class="set-aside-amount" id="fc-monthly">£0</div>
+    <div class="set-aside-label" id="fc-set-label">—</div>
+    <div class="set-aside-progress"><div class="set-aside-fill" id="fc-set-fill" style="width:0%"></div></div>
+  </div>
+  <div class="kpi-row" style="grid-template-columns:repeat(3,1fr);">
+    <div class="kpi"><div class="kpi-label">Income Tax</div><div class="kpi-val" style="color:var(--red)" id="fc-it">£0</div></div>
+    <div class="kpi"><div class="kpi-label">National Insurance</div><div class="kpi-val" style="color:var(--amber)" id="fc-ni">£0</div></div>
+    <div class="kpi"><div class="kpi-label">Total Due</div><div class="kpi-val" style="color:var(--navy)" id="fc-total">£0</div></div>
+  </div>
+  <div class="card"><div class="card-h"><div class="card-t">Breakdown</div></div><div class="card-b" id="fc-breakdown"></div></div>
+</div>
+
+<!-- QUARTERLY REPORTS -->
+<div class="page" id="p-quarters">
+  <div class="page-header"><div class="page-title">MTD Quarterly Reports</div><div class="page-sub">Making Tax Digital · live from your data</div></div>
+  <div class="q-row" id="qt-quarters"></div>
+  <div id="qt-detail"></div>
+</div>
+
+<!-- TAX GUIDE -->
+<div class="page" id="p-taxguide">
+  <div class="page-header"><div class="page-title">Tax Guide</div><div class="page-sub">33 entries · HMRC rules · 2026/27</div></div>
+  <input class="tg-search" id="tg-search" placeholder="Search... e.g. 'mileage', 'phone'" oninput="filterGuide()">
+  <div class="tg-cats" id="tg-cats"></div>
+  <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:10px;" id="tg-count"></div>
+  <div id="tg-list"></div>
+</div>
+
+<!-- MY BUSINESS -->
+<div class="page" id="p-business">
+  <div class="page-header"><div class="page-title">My Business Profile</div><div class="page-sub">AI uses this to personalise everything</div></div>
+  <div class="card"><div class="card-h"><div class="card-t">Details</div></div><div class="card-b"><div class="g2">
+    <div class="field"><label class="label">Business Name</label><input class="input" id="biz-name" placeholder="e.g. James Harrison Web Design"></div>
+    <div class="field"><label class="label">Trade</label><input class="input" id="biz-trade" placeholder="e.g. Freelance web developer"></div>
+    <div class="field"><label class="label">Annual Revenue</label><input class="input" id="biz-revenue" placeholder="e.g. £55,000"></div>
+    <div class="field"><label class="label">VAT?</label><select class="input" id="biz-vat" style="appearance:auto;"><option>No</option><option>Yes</option></select></div>
+  </div></div></div>
+  <div class="card"><div class="card-h"><div class="card-t">Work Setup</div></div><div class="card-b"><div class="g2">
+    <div class="field"><label class="label">Where?</label><select class="input" id="biz-workplace" style="appearance:auto;"><option>Home office</option><option>Rented office</option><option>Client sites</option><option>Mix</option></select></div>
+    <div class="field"><label class="label">Home hrs/week</label><input class="input" type="number" id="biz-hours" placeholder="35"></div>
+    <div class="field"><label class="label">Vehicle?</label><select class="input" id="biz-vehicle" style="appearance:auto;"><option>Yes — car</option><option>Yes — van</option><option>No</option></select></div>
+    <div class="field"><label class="label">Miles/year</label><input class="input" type="number" id="biz-miles" placeholder="3000"></div>
+  </div></div></div>
+  <div class="card"><div class="card-h"><div class="card-t">Software & Phone</div></div><div class="card-b">
+    <div class="field"><label class="label">Software subs</label><textarea class="textarea" id="biz-software" placeholder="Adobe £50/mo, Figma £12/mo"></textarea></div>
+    <div class="field"><label class="label">Phone</label><input class="input" id="biz-phone" placeholder="£35/mo, ~70% business"></div>
+    <div class="field"><label class="label">Insurance</label><input class="input" id="biz-insurance" placeholder="Prof indemnity £320/yr"></div>
+  </div></div>
+  <div style="display:flex;gap:8px;margin-top:4px;"><button class="btn btn-g" onclick="saveBiz()">💾 Save</button><button class="btn btn-o" onclick="clearBiz()">Clear</button></div>
+  <div id="biz-saved" style="display:none;margin-top:10px;padding:12px 16px;background:var(--emerald-light);border:1px solid var(--border);border-radius:4px;font-size:0.82rem;color:var(--emerald);font-weight:600;">✓ Saved. AI now trained on your business.</div>
+</div>
+
+<!-- DATA & EXPORT -->
+<div class="page" id="p-data">
+  <div class="page-header"><div class="page-title">Data & Export</div><div class="page-sub">Your data is sovereign · export, import, or nuke</div></div>
+  <div class="card">
+    <div class="card-h"><div class="card-t">Export</div></div>
+    <div class="card-b">
+      <div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:12px;">Download all your data as JSON. Includes transactions, invoices, business profile, and settings.</div>
+      <div class="data-row">
+        <button class="btn btn-g" onclick="exportAllData()">⤓ Export All Data (JSON)</button>
+        <button class="btn btn-o" onclick="exportCSV()">⤓ Export Transactions (CSV)</button>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-h"><div class="card-t">Import</div></div>
+    <div class="card-b">
+      <div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:12px;">Restore from a previous export. This will MERGE with existing data.</div>
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="importAllData(this)">
+      <button class="btn btn-o" onclick="document.getElementById('import-file').click()">⤒ Import Data (JSON)</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-h"><div class="card-t" style="color:var(--red)">⚠ Danger Zone</div></div>
+    <div class="card-b">
+      <div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:12px;">Permanently delete all data from this browser. Cannot be undone.</div>
+      <button class="btn btn-r" onclick="nukeData()">🗑 Delete All Data</button>
+    </div>
+  </div>
+</div>
+
+</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// FallAccount Elite v3.0 — Full Blade
+// Sovereign · IndexedDB · Live Calculations
+// ◊·κ=1
+// ═══════════════════════════════════════
+
+// ═══ TAX GUIDE DATA (33 entries) ═══
+var guide=[
+{q:'Can I claim mileage?',c:'Travel',t:'yes',a:'<strong>Yes.</strong> <span class="rate">45p/mile</span> first 10,000, <span class="rate">25p</span> after. Keep a log. Commute = no.<span class="ref">HMRC: Simplified expenses</span>'},
+{q:'Can I claim working from home?',c:'Home Office',t:'yes',a:'<strong>Yes.</strong> Simplified: <span class="rate">25-50hrs=£10/mo, 51-100=£18, 101+=£26</span>. Or actual costs (proportion of rent, utilities).<span class="ref">HMRC: BIM47820</span>'},
+{q:'Can I claim my phone?',c:'Phone',t:'partial',a:'<strong>Business portion only.</strong> 70% business = claim 70%. Separate line = 100%.<span class="ref">HMRC: Wholly and exclusively</span>'},
+{q:'Can I claim broadband?',c:'Home Office',t:'partial',a:'<strong>Business portion.</strong> 40-60% typical if WFH. Don\'t double-claim with simplified expenses.<span class="ref">HMRC: BIM47825</span>'},
+{q:'Can I claim train tickets?',c:'Travel',t:'yes',a:'<strong>Yes.</strong> Business journeys only. <span class="warn">Commute = never.</span><span class="ref">HMRC: BIM37600</span>'},
+{q:'Can I claim parking?',c:'Travel',t:'yes',a:'<strong>Yes</strong> for business. <span class="warn">Fines = never.</span><span class="ref">HMRC: BIM37600</span>'},
+{q:'Can I claim hotels?',c:'Travel',t:'yes',a:'<strong>Yes.</strong> Reasonable accommodation + meals on overnight trips.<span class="ref">HMRC: Travel expenses</span>'},
+{q:'Can I claim client lunches?',c:'Not Allowable',t:'no',a:'<strong>No.</strong> <span class="warn">Business entertaining = not allowable</span> for sole traders.<span class="ref">HMRC: BIM45000</span>'},
+{q:'Can I claim food?',c:'Travel',t:'partial',a:'<strong>Only travelling overnight.</strong> <span class="warn">Daily lunch = never.</span><span class="ref">HMRC: BIM37670</span>'},
+{q:'Can I claim a laptop?',c:'Equipment',t:'yes',a:'<strong>Yes — capital allowance.</strong> <span class="rate">AIA: full cost in year of purchase.</span> Business proportion only.<span class="ref">HMRC: AIA</span>'},
+{q:'Can I claim software?',c:'Software',t:'yes',a:'<strong>Yes.</strong> Adobe, hosting, SaaS tools — all allowable.<span class="ref">HMRC: Revenue expenses</span>'},
+{q:'Can I claim stationery?',c:'Office',t:'yes',a:'<strong>Yes.</strong> Ink, paper, envelopes, stamps.<span class="ref">HMRC: Revenue expenses</span>'},
+{q:'Can I claim marketing?',c:'Marketing',t:'yes',a:'<strong>Yes.</strong> Ads, website, business cards, SEO.<span class="ref">HMRC: Revenue expenses</span>'},
+{q:'Can I claim memberships?',c:'Professional',t:'yes',a:'<strong>Yes.</strong> Trade bodies, ICO, journals.<span class="ref">HMRC: BIM35805</span>'},
+{q:'Can I claim accountant fees?',c:'Professional',t:'yes',a:'<strong>Yes.</strong> Accountancy, tax advice, legal.<span class="ref">HMRC: BIM46400</span>'},
+{q:'Can I claim bank charges?',c:'Financial',t:'yes',a:'<strong>Yes.</strong> Account fees, card processing.<span class="ref">HMRC: Revenue expenses</span>'},
+{q:'Can I claim clothing?',c:'Not Allowable',t:'no',a:'<span class="warn">No</span> — unless protective/uniform/costume.<span class="ref">HMRC: BIM37900</span>'},
+{q:'Can I claim gym?',c:'Not Allowable',t:'no',a:'<span class="warn">No</span> — unless fitness IS your business.<span class="ref">HMRC: Dual purpose</span>'},
+{q:'Income Tax rates 2026/27?',c:'Tax Rates',t:'info',a:'<span class="rate">PA: £12,570</span>. <span class="rate">20%</span> to £50,270. <span class="rate">40%</span> to £125,140. <span class="rate">45%</span> above.<span class="ref">HMRC: Tax rates</span>'},
+{q:'National Insurance rates?',c:'Tax Rates',t:'info',a:'<span class="rate">Class 2: £3.45/wk</span>. <span class="rate">Class 4: 6%</span> on £12,570-£50,270, <span class="rate">2%</span> above.<span class="ref">HMRC: NI</span>'},
+{q:'Tax payment deadlines?',c:'Deadlines',t:'info',a:'<span class="rate">5 Apr 2027</span> year end. <span class="rate">31 Jan 2028</span> payment due. <span class="rate">31 Jul 2028</span> 2nd payment on account.<span class="ref">HMRC: SA deadlines</span>'},
+{q:'What is MTD?',c:'MTD',t:'info',a:'Quarterly digital reporting. Mandatory Apr 2026 for >£50k, Apr 2027 >£30k, Apr 2028 >£20k.<span class="ref">HMRC: MTD for IT</span>'},
+{q:'MTD deadlines?',c:'MTD',t:'info',a:'Q1 due 5 Aug · Q2 due 5 Nov · Q3 due 5 Feb · Q4 due 5 Apr · Final due 31 Jan.<span class="ref">HMRC: MTD schedule</span>'},
+{q:'Missed MTD deadline?',c:'MTD',t:'info',a:'Points system. 4 points = <span class="rate">£200 penalty</span>. Each late after = £200 more.<span class="ref">HMRC: Late penalties</span>'},
+{q:'Simplified Expenses?',c:'Simplified',t:'info',a:'Flat rates: <span class="rate">Vehicles 45p/25p</span> · <span class="rate">Home £10-26/mo</span> · <span class="rate">Premises £350-650/mo</span>.<span class="ref">HMRC: Simplified</span>'},
+{q:'Capital Allowances?',c:'Equipment',t:'info',a:'<span class="rate">AIA: £1,000,000</span>. Full cost of equipment in year of purchase. Cars have special rules.<span class="ref">HMRC: Capital allowances</span>'},
+{q:'Record keeping?',c:'Records',t:'info',a:'<strong>5 years</strong> after 31 Jan deadline. MTD = digital records. Photo of receipt counts.<span class="ref">HMRC: Records</span>'},
+{q:'Register self-employed?',c:'Getting Started',t:'info',a:'<strong>Yes.</strong> By 5 October of your second tax year.<span class="ref">HMRC: Register SA</span>'},
+{q:'Trading Allowance?',c:'Getting Started',t:'info',a:'Under <span class="rate">£1,000</span> income = no registration needed.<span class="ref">HMRC: Trading Allowance</span>'},
+{q:'VAT threshold?',c:'Tax Rates',t:'info',a:'<span class="rate">£90,000</span> rolling 12 months. Register within 30 days.<span class="ref">HMRC: VAT</span>'},
+{q:'Pension contributions?',c:'Financial',t:'partial',a:'Not a business expense but <strong>tax relief</strong> applies. Limit: <span class="rate">£60,000/yr</span>.<span class="ref">HMRC: Pensions</span>'},
+{q:'Claim a vehicle?',c:'Equipment',t:'yes',a:'Mileage (45p/25p) OR actual costs. One method per vehicle.<span class="ref">HMRC: Vehicle expenses</span>'},
+{q:'Training courses?',c:'Professional',t:'partial',a:'<strong>Updating skills = yes. New career = no.</strong> Books also claimable.<span class="ref">HMRC: BIM35660</span>'},
+];
+var guideCats=['All','Home Office','Travel','Equipment','Software','Professional','Marketing','Office','Phone','Insurance','Financial','Not Allowable','Tax Rates','MTD','Simplified','Records','Deadlines','Getting Started'];
+
+// ═══ STATE ═══
+var biz={}, aiConvo=[], pendingBankTxns=[];
+
+// ═══ SUGGESTED DEDUCTIONS ═══
+var sugDeds=[
+{n:'Training & CPD',d:'Courses, books, conferences',s:'~£200'},
+{n:'Broadband (40%)',d:'Home broadband business portion',s:'~£168'},
+{n:'Accounting Software',d:'FallAccount saves you £2-5k/yr',s:'~£297'}
+];
+
+// ═══ IndexedDB ═══
+var DB_NAME='FallAccountElite3';
+var DB_VER=3;
+function openDB(){return new Promise(function(r,j){var q=indexedDB.open(DB_NAME,DB_VER);q.onupgradeneeded=function(e){var db=e.target.result;if(!db.objectStoreNames.contains('data'))db.createObjectStore('data');if(!db.objectStoreNames.contains('transactions')){var ts=db.createObjectStore('transactions',{keyPath:'id',autoIncrement:true});ts.createIndex('date','date')}if(!db.objectStoreNames.contains('invoices')){db.createObjectStore('invoices',{keyPath:'id',autoIncrement:true})}if(!db.objectStoreNames.contains('audit')){var as=db.createObjectStore('audit',{keyPath:'id',autoIncrement:true});as.createIndex('ts','ts');as.createIndex('agent','agent')}};q.onsuccess=function(){r(q.result)};q.onerror=function(){j(q.error)}})}
+async function saveD(k,v){try{var d=await openDB();return new Promise(function(r){var t=d.transaction('data','readwrite');t.objectStore('data').put(v,k);t.oncomplete=function(){r(true)}})}catch(e){return false}}
+async function loadD(k){try{var d=await openDB();return new Promise(function(r){var q=d.transaction('data','readonly').objectStore('data').get(k);q.onsuccess=function(){r(q.result)};q.onerror=function(){r(null)}})}catch(e){return null}}
+
+// ═══ TRANSACTION STORE ═══
+async function addTxn(txn){try{var d=await openDB();return new Promise(function(r){var t=d.transaction('transactions','readwrite');var s=t.objectStore('transactions');txn.ts=Date.now();var req=s.add(txn);req.onsuccess=function(){r(req.result)};t.onerror=function(){r(null)}})}catch(e){return null}}
+async function getAllTxns(){try{var d=await openDB();return new Promise(function(r){var t=d.transaction('transactions','readonly');var s=t.objectStore('transactions');var req=s.getAll();req.onsuccess=function(){r(req.result||[])};req.onerror=function(){r([])}})}catch(e){return[]}}
+async function deleteTxn(id){try{var d=await openDB();return new Promise(function(r){var t=d.transaction('transactions','readwrite');t.objectStore('transactions').delete(id);t.oncomplete=function(){r(true)}})}catch(e){return false}}
+async function clearAllTxns(){try{var d=await openDB();return new Promise(function(r){var t=d.transaction('transactions','readwrite');t.objectStore('transactions').clear();t.oncomplete=function(){r(true)}})}catch(e){return false}}
+
+// ═══ INVOICE STORE ═══
+async function addInv(inv){try{var d=await openDB();return new Promise(function(r){var t=d.transaction('invoices','readwrite');inv.ts=Date.now();var req=t.objectStore('invoices').add(inv);req.onsuccess=function(){r(req.result)};t.onerror=function(){r(null)}})}catch(e){return null}}
+async function getAllInvs(){try{var d=await openDB();return new Promise(function(r){var t=d.transaction('invoices','readonly');var req=t.objectStore('invoices').getAll();req.onsuccess=function(){r(req.result||[])};req.onerror=function(){r([])}})}catch(e){return[]}}
+async function updateInvStatus(id,status){try{var d=await openDB();return new Promise(function(r){var t=d.transaction('invoices','readwrite');var s=t.objectStore('invoices');var g=s.get(id);g.onsuccess=function(){var inv=g.result;if(inv){inv.status=status;s.put(inv)}};t.oncomplete=function(){r(true)}})}catch(e){return false}}
+
+// ═══ TOAST ═══
+function toast(msg,type){var el=document.getElementById('toast');el.textContent=msg;el.className='toast '+(type||'success');el.classList.add('show');setTimeout(function(){el.classList.remove('show')},3000)}
+
+// ═══ NAV ═══
+function goTo(p){document.querySelectorAll('.page').forEach(function(x){x.classList.remove('active')});document.querySelectorAll('.sb-item').forEach(function(x){x.classList.remove('active')});var el=document.getElementById('p-'+p);if(el)el.classList.add('active');var nav=document.querySelector('[data-page="'+p+'"]');if(nav)nav.classList.add('active');document.getElementById('main').scrollTop=0;document.getElementById('sidebar').classList.remove('open');var ov=document.getElementById('mob-ov');if(ov)ov.classList.remove('show')}
+document.querySelectorAll('.sb-item').forEach(function(i){i.addEventListener('click',function(){var p=i.getAttribute('data-page');if(p)goTo(p)})});
+
+// ═══ DARK MODE ═══
+function toggleTheme(){var d=document.documentElement;var next=d.getAttribute('data-theme')==='dark'?'':'dark';d.setAttribute('data-theme',next);saveD('theme',next)}
+
+// ═══ TAX CALCULATION ENGINE ═══
+function calcTax(income,expenses,deductions){
+  var gross=income;
+  var totalDed=expenses+deductions;
+  var taxable=Math.max(0,gross-totalDed);
+  var pa=12570;
+  var afterPA=Math.max(0,taxable-pa);
+  // Income Tax
+  var it=0;
+  if(afterPA<=37700)it=afterPA*0.20;
+  else if(afterPA<=112570)it=37700*0.20+(afterPA-37700)*0.40;
+  else it=37700*0.20+74870*0.40+(afterPA-112570)*0.45;
+  // NI Class 2
+  var c2=3.45*52;
+  // NI Class 4
+  var c4=0;
+  var c4band=Math.min(Math.max(0,taxable-12570),37700);
+  var c4upper=Math.max(0,taxable-50270);
+  c4=c4band*0.06+c4upper*0.02;
+  if(taxable<6725){c2=0;c4=0}
+  var total=Math.round(it+c2+c4);
+  return{gross:gross,expenses:expenses,deductions:deductions,taxable:taxable,pa:pa,afterPA:afterPA,it:Math.round(it),c2:Math.round(c2),c4:Math.round(c4),total:total,monthly:Math.round(total/12)}
+}
+
+// ═══ DEDUCTIONS FROM BIZ PROFILE ═══
+function calcDeductions(){
+  var deds=[];var total=0;
+  if(biz.hours){
+    var h=parseInt(biz.hours);
+    var rate=h>=101?26:h>=51?18:h>=25?10:0;
+    if(rate>0){var yr=rate*12;deds.push({n:'Home Office',d:'£'+rate+'/mo simplified ('+h+'hrs/wk)',s:'£'+yr});total+=yr}
+  }
+  if(biz.phone){
+    var m=biz.phone.match(/(\d+)/);
+    if(m){var pct=biz.phone.match(/(\d+)%/);var p=pct?parseInt(pct[1]):70;var yr=Math.round(parseInt(m[1])*12*(p/100));deds.push({n:'Mobile ('+p+'%)',d:'£'+m[1]+'/mo × '+p+'%',s:'£'+yr});total+=yr}
+  }
+  if(biz.miles){
+    var mi=parseInt(biz.miles);
+    var first=Math.min(mi,10000)*0.45;var rest=Math.max(0,mi-10000)*0.25;var yr=Math.round(first+rest);
+    deds.push({n:'Mileage ('+mi.toLocaleString()+' mi)',d:'45p/mi first 10k, 25p after',s:'£'+yr});total+=yr
+  }
+  if(biz.software){
+    var nums=biz.software.match(/£(\d+)/g);
+    if(nums){var yr=nums.reduce(function(s,n){return s+parseInt(n.replace('£',''))},0)*12;deds.push({n:'Software Subscriptions',d:biz.software.substring(0,50),s:'£'+yr});total+=yr}
+  }
+  if(biz.insurance){
+    var m=biz.insurance.match(/£([\d,]+)/);
+    if(m){var yr=parseInt(m[1].replace(',',''));deds.push({n:'Professional Insurance',d:biz.insurance.substring(0,50),s:'£'+yr});total+=yr}
+  }
+  return{items:deds,total:total}
+}
+
+// ═══ FULL DASHBOARD REFRESH ═══
+async function refreshAll(){
+  var txns=await getAllTxns();
+  var invs=await getAllInvs();
+  var dedInfo=calcDeductions();
+
+  // Sum income/expenses from transactions
+  var income=0,expenses=0;
+  txns.forEach(function(t){
+    if(t.amount>0)income+=t.amount;
+    else expenses+=Math.abs(t.amount);
+  });
+
+  var tax=calcTax(income,expenses,dedInfo.total);
+
+  // KPIs
+  document.getElementById('kpi-revenue').textContent='£'+income.toLocaleString();
+  document.getElementById('kpi-expenses').textContent='£'+expenses.toLocaleString();
+  document.getElementById('kpi-profit').textContent='£'+tax.taxable.toLocaleString();
+  document.getElementById('kpi-tax').textContent='£'+tax.total.toLocaleString();
+  document.getElementById('kpi-rev-note').textContent=txns.filter(function(t){return t.amount>0}).length+' income transactions';
+  document.getElementById('kpi-exp-note').textContent=expenses>0?Math.round(expenses/Math.max(income,1)*100)+'% of revenue':'—';
+  document.getElementById('kpi-tax-note').textContent=tax.total>0?'Save £'+tax.monthly+'/mo':'—';
+
+  // Set aside boxes
+  var cm=new Date().getMonth(); // 0=Jan
+  var monthsElapsed=Math.max(1,cm>=3?cm-3+1:cm+9+1); // tax year: Apr=1, Jan=10, Mar=12
+  var saved=tax.monthly*monthsElapsed;
+  var pct=tax.total>0?Math.min(100,Math.round(saved/tax.total*100)):0;
+  ['ov','fc'].forEach(function(prefix){
+    var el=document.getElementById(prefix+'-monthly');
+    if(el)el.textContent='£'+tax.monthly;
+    var lab=document.getElementById(prefix+'-set-label');
+    if(lab)lab.textContent='£'+saved.toLocaleString()+' saved of £'+tax.total.toLocaleString()+' target';
+    var fill=document.getElementById(prefix+'-set-fill');
+    if(fill)fill.style.width=pct+'%';
+  });
+
+  // Forecast page
+  document.getElementById('fc-it').textContent='£'+tax.it.toLocaleString();
+  document.getElementById('fc-ni').textContent='£'+(tax.c2+tax.c4).toLocaleString();
+  document.getElementById('fc-total').textContent='£'+tax.total.toLocaleString();
+  renderBreakdown(tax,dedInfo);
+
+  // Chart from real data
+  renderChart(txns);
+
+  // Transactions page
+  renderTxns('all-txns',txns,true);
+  renderTxns('ov-txns',txns.slice(-5).reverse(),false);
+  document.getElementById('txn-subtitle').textContent=txns.length+' transactions · stored in your browser';
+  var badge=document.getElementById('txn-count-badge');
+  badge.textContent=txns.length>0?txns.length:'';
+
+  // Invoices
+  renderInvs(invs);
+  document.getElementById('inv-subtitle').textContent=invs.length+' invoices';
+  // Auto-increment invoice number
+  if(invs.length>0){
+    var maxNum=invs.reduce(function(mx,i){var n=parseInt((i.num||'0').replace(/\D/g,''));return n>mx?n:mx},0);
+    document.getElementById('inv-num').value='INV-'+String(maxNum+1).padStart(3,'0');
+  }
+
+  // Deductions
+  renderDeds(dedInfo);
+
+  // Quarters
+  renderQuarters(txns);
+}
+
+// ═══ RENDER TRANSACTIONS ═══
+function renderTxns(elId,txns,showDelete){
+  var el=document.getElementById(elId);
+  if(!el)return;
+  if(txns.length===0){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.82rem;">No transactions yet.</div>';return}
+  el.innerHTML=txns.map(function(t){
+    var isInc=t.amount>0;
+    var dateStr=t.date||'—';
+    var del=showDelete?'<button class="txn-del" onclick="removeTxn('+t.id+')">✕</button>':'';
+    return'<div class="txn'+(showDelete?' has-del':'')+'"><div class="txn-date">'+dateStr+'</div><div><div class="txn-desc">'+esc(t.desc||'—')+'</div><div class="txn-cat">'+(t.category||'Uncategorised')+(t.claimable?' ✓':'')+'</div></div><div class="txn-amt '+(isInc?'inc':'exp')+'">'+(isInc?'+':'-')+'£'+Math.abs(t.amount).toFixed(2)+'</div>'+del+'</div>'
+  }).join('')
+}
+
+async function removeTxn(id){
+  await deleteTxn(id);
+  toast('Transaction removed');
+  refreshAll();
+}
+
+function addManualTxn(){
+  var desc=prompt('Description (e.g. "Adobe Creative Cloud"):');
+  if(!desc)return;
+  var amt=prompt('Amount (negative for expense, e.g. -49.94 or 2400):');
+  if(!amt)return;
+  var cat=prompt('Category (Software, Travel, Sales, Office, Phone, Insurance, Equipment, Marketing, Professional, Other):');
+  var amount=parseFloat(amt);
+  if(isNaN(amount))return toast('Invalid amount','error');
+  var today=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+  addTxn({date:today,desc:desc,amount:amount,category:cat||'Other',claimable:amount<0,source:'manual'}).then(function(){toast('Transaction added');refreshAll()})
+}
+
+// ═══ RENDER INVOICES ═══
+function renderInvs(invs){
+  var el=document.getElementById('all-invs');
+  if(invs.length===0){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.82rem;">No invoices yet.</div>';return}
+  el.innerHTML=invs.map(function(i){
+    return'<div class="inv"><div class="inv-id">'+esc(i.num||'—')+'</div><div class="inv-client">'+esc(i.client||'—')+'</div><div class="inv-amt">£'+parseFloat(i.amount||0).toFixed(2)+'</div><span class="inv-status '+i.status+'" onclick="cycleInvStatus('+i.id+')" style="cursor:pointer;" title="Click to change status">'+i.status+'</span></div>'
+  }).join('')
+}
+
+async function cycleInvStatus(id){
+  var invs=await getAllInvs();
+  var inv=invs.find(function(i){return i.id===id});
+  if(!inv)return;
+  var next={pending:'paid',paid:'overdue',overdue:'pending'};
+  await updateInvStatus(id,next[inv.status]||'pending');
+  toast('Invoice status updated');
+  refreshAll();
+}
+
+// ═══ RENDER DEDUCTIONS ═══
+function renderDeds(dedInfo){
+  var el=document.getElementById('all-deds');
+  var ovEl=document.getElementById('ov-deds');
+  if(dedInfo.items.length===0){
+    el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.82rem;">Set up your business profile to auto-detect deductions.</div>';
+    if(ovEl)ovEl.innerHTML=el.innerHTML;
+  } else {
+    el.innerHTML=dedInfo.items.map(function(d){return'<div class="ded"><div><div class="ded-name">'+d.n+'</div><div class="ded-desc">'+d.d+'</div></div><div class="ded-save">'+d.s+'/yr</div></div>'}).join('');
+    if(ovEl)ovEl.innerHTML=dedInfo.items.slice(0,3).map(function(d){return'<div class="ded"><div><div class="ded-name">'+d.n+'</div><div class="ded-desc">'+d.d+'</div></div><div class="ded-save">'+d.s+'/yr</div></div>'}).join('');
+  }
+  document.getElementById('ded-total').textContent='Total: £'+dedInfo.total.toLocaleString()+'/yr';
+  document.getElementById('ded-count-badge').textContent=dedInfo.items.length>0?dedInfo.items.length:'';
+  document.getElementById('ded-subtitle').textContent=dedInfo.items.length+' active deductions · £'+dedInfo.total.toLocaleString()+'/yr saved';
+
+  // Suggested
+  document.getElementById('sug-deds').innerHTML=sugDeds.map(function(d){
+    return'<div class="sug-ded"><div><div style="font-size:0.8rem;font-weight:600;color:var(--navy);">'+d.n+'</div><div style="font-size:0.65rem;color:var(--text-dim);">'+d.d+'</div></div><div style="font-family:\'JetBrains Mono\',monospace;font-size:0.78rem;font-weight:600;color:var(--amber);">'+d.s+'</div><button class="btn btn-g btn-s" onclick="this.textContent=\'✓\';this.disabled=true;">Claim</button></div>'
+  }).join('')
+}
+
+// ═══ RENDER CHART FROM REAL DATA ═══
+function renderChart(txns){
+  var el=document.getElementById('overview-chart');
+  var months=['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'];
+  var monthMap={};
+  months.forEach(function(m){monthMap[m]={i:0,e:0}});
+
+  txns.forEach(function(t){
+    var d=t.date||'';
+    var mMatch=d.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i);
+    if(mMatch){
+      var m=mMatch[1].charAt(0).toUpperCase()+mMatch[1].slice(1).toLowerCase();
+      if(monthMap[m]){
+        if(t.amount>0)monthMap[m].i+=t.amount;
+        else monthMap[m].e+=Math.abs(t.amount);
+      }
+    }
+  });
+
+  var data=months.map(function(m){return{m:m,i:monthMap[m].i,e:monthMap[m].e}});
+  var maxV=Math.max(1,Math.max.apply(null,data.map(function(m){return Math.max(m.i,m.e)})));
+
+  el.innerHTML=data.map(function(m){
+    var ih=Math.round(m.i/maxV*170);
+    var eh=Math.round(m.e/maxV*170);
+    return'<div class="chart-bar-group"><div style="display:flex;gap:2px;align-items:flex-end;height:180px;width:100%;"><div class="chart-bar inc" style="height:'+ih+'px;flex:1;" title="Income: £'+Math.round(m.i).toLocaleString()+'"></div><div class="chart-bar exp" style="height:'+eh+'px;flex:1;" title="Expenses: £'+Math.round(m.e).toLocaleString()+'"></div></div><div class="chart-month">'+m.m+'</div></div>'
+  }).join('')
+}
+
+// ═══ RENDER TAX BREAKDOWN ═══
+function renderBreakdown(tax,dedInfo){
+  var el=document.getElementById('fc-breakdown');
+  el.innerHTML='<div style="font-size:0.8rem;color:var(--text-dim);line-height:2;"><div style="display:grid;grid-template-columns:1fr auto;gap:4px;">'+
+    '<div>Gross Income</div><div style="font-family:\'JetBrains Mono\',monospace;text-align:right;font-weight:600;">£'+tax.gross.toLocaleString()+'</div>'+
+    '<div>Less: Expenses</div><div style="font-family:\'JetBrains Mono\',monospace;text-align:right;color:var(--red);">-£'+tax.expenses.toLocaleString()+'</div>'+
+    '<div>Less: Deductions</div><div style="font-family:\'JetBrains Mono\',monospace;text-align:right;color:var(--emerald);">-£'+dedInfo.total.toLocaleString()+'</div>'+
+    '<div style="border-top:1px solid var(--border);padding-top:4px;font-weight:700;color:var(--navy);">Taxable Profit</div><div style="font-family:\'JetBrains Mono\',monospace;text-align:right;font-weight:700;border-top:1px solid var(--border);padding-top:4px;">£'+tax.taxable.toLocaleString()+'</div>'+
+    '<div>Personal Allowance</div><div style="font-family:\'JetBrains Mono\',monospace;text-align:right;color:var(--emerald);">-£'+tax.pa.toLocaleString()+'</div>'+
+    '<div>Income Tax (20%/40%/45%)</div><div style="font-family:\'JetBrains Mono\',monospace;text-align:right;">£'+tax.it.toLocaleString()+'</div>'+
+    '<div>Class 2 NI</div><div style="font-family:\'JetBrains Mono\',monospace;text-align:right;">£'+tax.c2.toLocaleString()+'</div>'+
+    '<div>Class 4 NI (6%/2%)</div><div style="font-family:\'JetBrains Mono\',monospace;text-align:right;">£'+tax.c4.toLocaleString()+'</div>'+
+    '<div style="border-top:2px solid var(--navy);padding-top:4px;font-weight:700;color:var(--red);font-size:0.9rem;">Total Due</div><div style="font-family:\'JetBrains Mono\',monospace;text-align:right;font-weight:700;border-top:2px solid var(--navy);padding-top:4px;color:var(--red);font-size:0.9rem;">£'+tax.total.toLocaleString()+'</div>'+
+    '</div></div>'
+}
+
+// ═══ RENDER QUARTERS ═══
+function renderQuarters(txns){
+  var quarters=[
+    {label:'Q1 Apr—Jun',months:['Apr','May','Jun'],due:'5 Aug'},
+    {label:'Q2 Jul—Sep',months:['Jul','Aug','Sep'],due:'5 Nov'},
+    {label:'Q3 Oct—Dec',months:['Oct','Nov','Dec'],due:'5 Feb'},
+    {label:'Q4 Jan—Mar',months:['Jan','Feb','Mar'],due:'5 Apr'}
+  ];
+  var now=new Date();
+  var curMonth=now.getMonth(); // 0=Jan
+  var curQ=curMonth<3?3:curMonth<6?0:curMonth<9?1:2; // tax year quarters
+
+  function qData(q){
+    var inc=0,exp=0;
+    txns.forEach(function(t){
+      var d=t.date||'';
+      var mMatch=d.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i);
+      if(mMatch){
+        var m=mMatch[1].charAt(0).toUpperCase()+mMatch[1].slice(1).toLowerCase();
+        if(q.months.indexOf(m)>=0){
+          if(t.amount>0)inc+=t.amount;else exp+=Math.abs(t.amount);
+        }
+      }
+    });
+    return{inc:inc,exp:exp,net:inc-exp}
+  }
+
+  ['ov-quarters','qt-quarters'].forEach(function(elId){
+    var el=document.getElementById(elId);
+    if(!el)return;
+    el.innerHTML=quarters.map(function(q,i){
+      var cls=i<curQ?'done':i===curQ?'current':'future';
+      var status=i<curQ?'<span style="color:var(--emerald)">✓ Submitted</span>':i===curQ?'<span style="color:var(--navy)">● Due '+q.due+'</span>':'<span style="color:var(--text-muted)">Upcoming</span>';
+      return'<div class="q-box '+cls+'"><div class="q-label">'+q.label+'</div><div class="q-status">'+status+'</div></div>'
+    }).join('')
+  });
+
+  // Quarter detail on the quarters page
+  var cq=quarters[curQ];
+  var cd=qData(cq);
+  document.getElementById('qt-detail').innerHTML=
+    '<div class="card"><div class="card-h"><div class="card-t">'+cq.label+' Preview</div><button class="btn btn-g btn-s" onclick="exportQuarterlyReport()">⤓ Export Report</button></div>'+
+    '<div class="card-b" style="font-size:0.8rem;color:var(--text-dim);line-height:2;">'+
+    '<div style="display:grid;grid-template-columns:1fr auto;gap:4px;">'+
+    '<div>Income</div><div style="font-family:\'JetBrains Mono\',monospace;text-align:right;color:var(--emerald);font-weight:600;">£'+Math.round(cd.inc).toLocaleString()+'</div>'+
+    '<div>Expenses</div><div style="font-family:\'JetBrains Mono\',monospace;text-align:right;color:var(--red);font-weight:600;">£'+Math.round(cd.exp).toLocaleString()+'</div>'+
+    '<div style="font-weight:700;color:var(--navy);">Net Profit</div><div style="font-family:\'JetBrains Mono\',monospace;text-align:right;font-weight:700;">£'+Math.round(cd.net).toLocaleString()+'</div>'+
+    '</div></div></div>'
+}
+
+// ═══ MTD EXPORT ═══
+async function exportQuarterlyReport(){
+  var txns=await getAllTxns();
+  var quarters=[{label:'Q1 Apr—Jun',months:['Apr','May','Jun']},{label:'Q2 Jul—Sep',months:['Jul','Aug','Sep']},{label:'Q3 Oct—Dec',months:['Oct','Nov','Dec']},{label:'Q4 Jan—Mar',months:['Jan','Feb','Mar']}];
+  var now=new Date();var curQ=now.getMonth()<3?3:now.getMonth()<6?0:now.getMonth()<9?1:2;
+  var cq=quarters[curQ];
+  var inc=0,exp=0,cumInc=0,cumExp=0;
+  txns.forEach(function(t){
+    if(t.amount>0)cumInc+=t.amount;else cumExp+=Math.abs(t.amount);
+    var d=t.date||'';var mMatch=d.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i);
+    if(mMatch){var m=mMatch[1].charAt(0).toUpperCase()+mMatch[1].slice(1).toLowerCase();if(cq.months.indexOf(m)>=0){if(t.amount>0)inc+=t.amount;else exp+=Math.abs(t.amount)}}
+  });
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>MTD '+cq.label+' Report</title><style>body{font-family:Outfit,sans-serif;padding:40px;max-width:700px;margin:0 auto;color:#1a1e24;}h1{font-family:Georgia,serif;}table{width:100%;border-collapse:collapse;margin:16px 0;}th,td{padding:10px;text-align:left;border-bottom:1px solid #e8e6e1;}th{font-size:0.7rem;text-transform:uppercase;color:#5c6370;border-bottom:2px solid #1a2332;}.total{font-weight:700;font-size:1.1rem;}</style></head><body><h1>MTD Quarterly Report — '+cq.label+'</h1><p>Business: '+(biz.name||'Your Business')+'</p><table><tr><th>Metric</th><th style="text-align:right;">Amount</th></tr><tr><td>Income (Quarter)</td><td style="text-align:right;color:#0d7c5f;font-weight:600;">£'+Math.round(inc).toLocaleString()+'</td></tr><tr><td>Expenses (Quarter)</td><td style="text-align:right;color:#c4342d;font-weight:600;">£'+Math.round(exp).toLocaleString()+'</td></tr><tr><td class="total">Net Profit (Quarter)</td><td style="text-align:right;" class="total">£'+Math.round(inc-exp).toLocaleString()+'</td></tr><tr><td>Cumulative Income YTD</td><td style="text-align:right;">£'+Math.round(cumInc).toLocaleString()+'</td></tr><tr><td>Cumulative Expenses YTD</td><td style="text-align:right;">£'+Math.round(cumExp).toLocaleString()+'</td></tr><tr><td class="total">Cumulative Net Profit YTD</td><td style="text-align:right;" class="total">£'+Math.round(cumInc-cumExp).toLocaleString()+'</td></tr></table><p style="font-size:0.7rem;color:#9ca3ad;margin-top:30px;">Generated by FallAccount Elite · ◊·κ=1</p></body></html>';
+  dlBlob(html,'text/html','MTD-'+cq.label.replace(/\s/g,'-')+'-Report.html');
+  toast('Quarterly report exported')
+}
+
+// ═══ AI CHAT ═══ v2: 8+1 SWARM ARCHITECTURE ═══
+function rChat(){var el=document.getElementById('chat-msgs');el.innerHTML=aiConvo.map(function(m){return'<div class="chat-msg '+m.role+'"><div class="bubble">'+m.text+'</div></div>'}).join('');el.scrollTop=el.scrollHeight}
+var aiChatBusy=false;
+function askAI(text){
+  if(!text||!text.trim())return;
+  if(aiChatBusy){toast('Still thinking on previous question...','warn');return}
+  aiChatBusy=true;
+  var sendBtn=document.getElementById('ai-send');
+  if(sendBtn){sendBtn.disabled=true;sendBtn.textContent='...'}
+  aiConvo.push({role:'user',text:text.replace(/</g,'&lt;')});rChat();
+  var ctx='';if(biz.name){ctx='\n\nBUSINESS: '+biz.name;if(biz.trade)ctx+=', '+biz.trade;if(biz.revenue)ctx+=', Revenue: '+biz.revenue;if(biz.hours)ctx+=', Home hrs/wk: '+biz.hours;if(biz.miles)ctx+=', Miles/yr: '+biz.miles}
+  var sys='You are FallAccount AI — 8+1 swarm (α scaffold · β build · γ cache · δ run · ε gate · ζ observe · η score · θ format · Ω orchestrate) operating as UK Chartered Accountant autopilot for 2026/27.\n\nTAX YEAR 2026/27 KNOWLEDGE:\nPA £12,570 · Basic 20% (to £50,270) · Higher 40% (to £125,140) · Additional 45%\nNI Class 2 £3.45/wk · Class 4 6% on £12,570-£50,270, 2% above\nMileage 45p/25p · Home £10-26/mo · AIA £1M · VAT £90k · MTD Apr 2026 >£50k\nClient entertaining NEVER allowable.\n\nBehave as an AUTOPILOT: do the work, give specific £ numbers, no padding. If uncertain about facts flag with [VERIFY]. If tax year changed since your training flag [YEAR-CHECK].'+ctx;
+  aiConvo.push({role:'bot',text:'<em style="color:rgba(255,255,255,0.3)">Thinking...</em>'});rChat();
+  callClaude(sys,text).then(function(r){
+    aiConvo[aiConvo.length-1].text=r;rChat()
+  }).catch(function(err){
+    aiConvo[aiConvo.length-1].text=(err.message&&err.message.indexOf('API key')>-1)?
+      '<em style="color:var(--amber);">No API key set. Click 🔑 in the sidebar to add your Claude API key, or use the local tax guide below.</em><br><br>'+localAns(text):
+      '<em style="color:var(--amber);">'+esc(err.message||'AI unavailable')+'</em><br><br>'+localAns(text);
+    rChat()
+  }).finally(function(){
+    aiChatBusy=false;
+    if(sendBtn){sendBtn.disabled=false;sendBtn.textContent='Ask'}
+  })
+}
+
+// ═══ API KEY MANAGEMENT ═══
+function getApiKey(){return localStorage.getItem('fa_claude_key')||''}
+function setApiKey(k){if(k)localStorage.setItem('fa_claude_key',k.trim());else localStorage.removeItem('fa_claude_key')}
+function showApiKeyModal(){
+  var existing=getApiKey();
+  var modal=document.createElement('div');
+  modal.className='fa-modal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:10000;display:grid;place-items:center;';
+  modal.innerHTML='<div style="background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:28px;width:420px;max-width:90vw;"><h3 style="font-family:DM Serif Display,serif;font-size:1.05rem;color:var(--navy);margin-bottom:10px;">Claude API Key</h3><p style="font-size:0.78rem;color:var(--text-dim);line-height:1.6;margin-bottom:14px;">Your key stays in this browser\'s localStorage. Never leaves your machine except to call the Anthropic API directly. Sovereign.</p><input type="password" id="apikey-input" placeholder="sk-ant-api03-..." value="'+existing+'" style="width:100%;padding:10px;border:1px solid var(--border2);border-radius:4px;font-family:JetBrains Mono,monospace;font-size:0.78rem;margin-bottom:10px;background:var(--panel);color:var(--text);"><div style="display:flex;gap:8px;"><button class="btn btn-g btn-s" style="flex:1;" onclick="saveApiKeyUI()">Save Key</button><button class="btn btn-s" style="flex:1;" onclick="closeModal()">Cancel</button></div><div style="font-family:JetBrains Mono,monospace;font-size:0.55rem;color:var(--text-muted);margin-top:10px;line-height:1.5;">Get your key at console.anthropic.com. Without a key the app still works — AI features use the local tax guide.</div></div>';
+  modal.addEventListener('click',function(e){if(e.target===modal)closeModal()});
+  document.body.appendChild(modal);
+  setTimeout(function(){var inp=document.getElementById('apikey-input');if(inp)inp.focus()},50);
+}
+function closeModal(){var m=document.querySelector('.fa-modal');if(m)m.remove()}
+function saveApiKeyUI(){
+  var inp=document.getElementById('apikey-input');
+  if(!inp)return;
+  var v=inp.value.trim();
+  setApiKey(v);
+  toast(v?'API key saved':'API key cleared');
+  closeModal();
+  updateApiKeyIndicator();
+}
+
+// ═══ SWARM CALL (anti-hallucination architecture) ═══
+async function callClaude(sys,msg){
+  var key=getApiKey();
+  if(!key)throw new Error('No API key set');
+  var r=await fetch("https://api.anthropic.com/v1/messages",{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "x-api-key":key,
+      "anthropic-version":"2023-06-01",
+      "anthropic-dangerous-direct-browser-access":"true"
+    },
+    body:JSON.stringify({
+      model:"claude-sonnet-4-20250514",
+      max_tokens:1500,
+      system:sys,
+      messages:[{role:"user",content:msg}]
+    })
+  });
+  if(!r.ok){
+    var errText=await r.text().catch(function(){return ''});
+    throw new Error('API '+r.status+': '+errText.slice(0,100))
+  }
+  var d=await r.json();
+  var text=d.content.filter(function(i){return i.type==='text'}).map(function(i){return i.text}).join('\n');
+  // ζ (observe) — audit confidence based on flags
+  var hasVerify=text.indexOf('[VERIFY]')>-1;
+  var hasYearCheck=text.indexOf('[YEAR-CHECK]')>-1;
+  var confidence=(hasVerify||hasYearCheck)?'medium':'high';
+  auditLog('chat-ai',msg,text,confidence);
+  // format flags
+  text=text.replace(/\[VERIFY\]/g,'<span class="ai-warn">[VERIFY]</span>');
+  text=text.replace(/\[YEAR-CHECK\]/g,'<span class="ai-warn">[YEAR-CHECK]</span>');
+  // θ (format) — render markdown
+  return text.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/£([\d,]+)/g,'<span class="ai-rate">£$1</span>').replace(/\n/g,'<br>')
+}
+
+// ═══ AUDIT LOG — every AI decision stored for HMRC defensibility ═══
+async function auditLog(agent,input,output,confidence){
+  try{
+    var d=await openDB();
+    var t=d.transaction('audit','readwrite');
+    t.objectStore('audit').add({
+      ts:new Date().toISOString(),
+      agent:agent,
+      input:(typeof input==='string'?input:JSON.stringify(input)).slice(0,500),
+      output:(typeof output==='string'?output:JSON.stringify(output)).slice(0,500),
+      confidence:confidence||'unknown'
+    });
+  }catch(e){console.warn('Audit log failed:',e)}
+}
+async function getAudit(){try{var d=await openDB();return new Promise(function(r){var t=d.transaction('audit','readonly');var req=t.objectStore('audit').getAll();req.onsuccess=function(){r(req.result||[])};req.onerror=function(){r([])}})}catch(e){return[]}}
+async function clearAudit(){try{var d=await openDB();return new Promise(function(r){var t=d.transaction('audit','readwrite');t.objectStore('audit').clear();t.oncomplete=function(){r(true)}})}catch(e){return false}}
+
+// ═══ AUDIT LOG VIEWER (for HMRC defensibility) ═══
+async function showAuditLog(){
+  var entries=await getAudit();
+  entries.sort(function(a,b){return new Date(b.ts)-new Date(a.ts)});
+  var modal=document.createElement('div');
+  modal.className='fa-modal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:10000;display:grid;place-items:center;padding:20px;';
+  var rows=entries.length?entries.slice(0,100).map(function(e){
+    var confColor=e.confidence==='high'?'var(--emerald)':e.confidence==='medium'||e.confidence==='batch'?'var(--amber)':'var(--red)';
+    var dt=new Date(e.ts);
+    return '<tr><td style="font-family:JetBrains Mono,monospace;font-size:0.68rem;color:var(--text-muted);white-space:nowrap;padding:6px;">'+dt.toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})+'</td><td style="font-family:JetBrains Mono,monospace;font-size:0.7rem;padding:6px;"><strong>'+esc(e.agent)+'</strong></td><td style="color:'+confColor+';font-size:0.7rem;font-weight:600;padding:6px;">'+esc(e.confidence||'—')+'</td><td style="font-size:0.68rem;color:var(--text-dim);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:6px;" title="'+esc(e.input)+'">'+esc(e.input.slice(0,60))+'</td><td style="font-size:0.68rem;color:var(--text-dim);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:6px;" title="'+esc(e.output)+'">'+esc(e.output.slice(0,60))+'</td></tr>'
+  }).join(''):'<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted);">No AI decisions logged yet. The audit log fills automatically as you use AI features.</td></tr>';
+  modal.innerHTML='<div style="background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:24px;width:900px;max-width:95vw;max-height:85vh;display:flex;flex-direction:column;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"><div><h3 style="font-family:DM Serif Display,serif;font-size:1.05rem;color:var(--navy);">AI Audit Log</h3><div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">Every AI decision logged for HMRC defensibility · '+entries.length+' entries · Last 100 shown</div></div><div style="display:flex;gap:6px;"><button class="btn btn-s" onclick="exportAudit()">Export JSON</button><button class="btn btn-s" onclick="clearAuditConfirm()">Clear</button><button class="btn btn-s" onclick="closeModal()">Close</button></div></div><div style="overflow:auto;flex:1;"><table style="width:100%;border-collapse:collapse;"><thead><tr style="position:sticky;top:0;background:var(--panel);border-bottom:2px solid var(--border2);"><th style="text-align:left;padding:8px;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);">When</th><th style="text-align:left;padding:8px;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);">Agent</th><th style="text-align:left;padding:8px;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);">Confidence</th><th style="text-align:left;padding:8px;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);">Input</th><th style="text-align:left;padding:8px;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);">Output</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+  modal.addEventListener('click',function(e){if(e.target===modal)closeModal()});
+  document.body.appendChild(modal);
+}
+function clearAuditConfirm(){
+  if(confirm('Clear the entire audit log? This cannot be undone.')){
+    clearAudit().then(function(){closeModal();toast('Audit cleared')})
+  }
+}
+
+async function exportAudit(){
+  var entries=await getAudit();
+  var blob=new Blob([JSON.stringify(entries,null,2)],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;a.download='fallaccount-audit-'+new Date().toISOString().slice(0,10)+'.json';a.click();
+  URL.revokeObjectURL(url);
+  toast('Audit log exported')
+}
+
+// ═══ API KEY STATUS INDICATOR ═══
+function updateApiKeyIndicator(){
+  var el=document.getElementById('apikey-indicator');
+  if(!el)return;
+  var hasKey=!!getApiKey();
+  el.innerHTML=hasKey?'<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--emerald);margin-left:4px;vertical-align:middle;"></span>':'<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--amber);margin-left:4px;vertical-align:middle;"></span>';
+}
+
+function localAns(q){var ql=q.toLowerCase();var m=guide.find(function(e){return e.q.toLowerCase().includes(ql)||ql.split(' ').some(function(w){return w.length>3&&e.q.toLowerCase().includes(w)})});if(m)return m.a.replace(/class="rate"/g,'class="ai-rate"').replace(/class="warn"/g,'class="ai-warn"').replace(/class="ref"/g,'class="ai-ref"');return'Ask about mileage, home office, phone, software, deductions, tax rates, MTD, or check the Tax Guide.'}
+
+// ═══ RECEIPT SCANNER ═══
+function initReceipt(){
+  var zone=document.getElementById('receipt-zone');
+  zone.addEventListener('dragover',function(e){e.preventDefault();zone.classList.add('dragover')});
+  zone.addEventListener('dragleave',function(){zone.classList.remove('dragover')});
+  zone.addEventListener('drop',function(e){e.preventDefault();zone.classList.remove('dragover');if(e.dataTransfer.files.length)processReceiptFile(e.dataTransfer.files[0])})
+}
+function handleReceipt(input){if(input.files.length)processReceiptFile(input.files[0])}
+function processReceiptFile(file){
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var img=document.getElementById('receipt-img');img.src=e.target.result;img.style.display='block';
+    var resultDiv=document.getElementById('receipt-result');resultDiv.style.display='block';
+    resultDiv.innerHTML='<div style="text-align:center;padding:12px;color:var(--text-muted);">🤖 AI reading receipt...</div>';
+    var base64=e.target.result.split(',')[1];var mediaType=file.type||'image/jpeg';
+    callClaudeVision(base64,mediaType,'receipt').then(function(r){
+      var rid=Date.now();window._pendingReceipts=window._pendingReceipts||{};window._pendingReceipts[rid]={amt:r.amount,desc:r.vendor,cat:r.category};
+      resultDiv.innerHTML='<div class="receipt-result"><div style="font-size:0.82rem;font-weight:700;color:var(--emerald);margin-bottom:8px;">✓ Receipt Scanned</div><div style="font-size:0.82rem;color:var(--text-dim);line-height:1.8;">'+r.html+'</div><button class="btn btn-g btn-s" style="margin-top:8px;" onclick="addReceiptTxn('+rid+',this)">+ Add to Transactions</button></div>'
+    }).catch(function(err){
+      var msg=err&&err.message?err.message:'Unknown error';
+      var hint='';
+      if(msg.indexOf('API key')>-1){hint='<br><button class="btn btn-s" style="margin-top:8px;" onclick="showApiKeyModal()">🔑 Set API Key</button>'}
+      else if(msg.indexOf('401')>-1){hint='<br>Your API key appears invalid. <button class="btn btn-s" style="margin-top:8px;" onclick="showApiKeyModal()">🔑 Update Key</button>'}
+      else if(msg.indexOf('429')>-1){hint='<br>Rate limit hit — wait a moment and try again.'}
+      else if(msg.indexOf('529')>-1||msg.indexOf('overloaded')>-1){hint='<br>API is overloaded — try again in a minute.'}
+      resultDiv.innerHTML='<div class="receipt-result"><div style="color:var(--amber);font-size:0.78rem;">⚠ '+esc(msg)+hint+'</div><div style="font-size:0.72rem;color:var(--text-muted);margin-top:6px;">Or add manually via Transactions page.</div></div>'
+    })
+  };reader.readAsDataURL(file)
+}
+
+async function callClaudeVision(base64,mediaType,mode){
+  var key=getApiKey();
+  if(!key)throw new Error('No API key set');
+  // α (scaffold) + β (build) + δ (run) + ζ (observe): receipt extraction with confidence
+  var prompt=mode==='receipt'?
+    'You are the receipt-processing swarm (α·β·δ·ε·ζ). Read this receipt/financial image.\n\nα scaffold: identify document type and completeness\nβ build: extract {vendor, date, total_amount}\nδ run: determine UK sole trader category (Software, Travel, Office, Phone, Insurance, Food, Equipment, Marketing, Professional, Other)\nε gate: is it claimable? (client entertaining NEVER allowable, food only if travel, home office allowable)\nζ observe: rate your CONFIDENCE per field (high/medium/low)\n\nReturn ONLY JSON:\n{"vendor":"...","date":"...","amount":-00.00,"category":"...","claimable":true/false,"confidence":{"vendor":"high","amount":"high","category":"medium","date":"high"},"warnings":["any uncertainty or concerns"],"summary":"one-line HTML summary"}\n\nAmount NEGATIVE for expenses. If you cannot read a field reliably, set confidence to "low" and include in warnings. NEVER fabricate values.':
+    'You are the bank-parser swarm (α·β·δ·ζ). Read this financial document/screenshot. Extract ALL transactions.\n\nReturn ONLY JSON array of transactions:\n[{"date":"...","desc":"...","amount":0.00,"category":"...","claimable":true/false,"confidence":"high|medium|low"}]\n\nIncome = positive, expenses = negative. UK sole trader categories. Mark "low" confidence for any blurred/unclear row. NO markdown fences.';
+
+  var r=await fetch("https://api.anthropic.com/v1/messages",{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "x-api-key":key,
+      "anthropic-version":"2023-06-01",
+      "anthropic-dangerous-direct-browser-access":"true"
+    },
+    body:JSON.stringify({
+      model:"claude-sonnet-4-20250514",
+      max_tokens:1500,
+      messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:mediaType,data:base64}},{type:"text",text:prompt}]}]
+    })
+  });
+  if(!r.ok){var et=await r.text().catch(function(){return ''});throw new Error('API '+r.status+': '+et.slice(0,100))}
+  var d=await r.json();
+  var raw=d.content.filter(function(i){return i.type==='text'}).map(function(i){return i.text}).join('');
+  // Strip markdown fences + extract JSON object/array from any surrounding text
+  var clean=raw.replace(/```json|```/g,'').trim();
+  // If AI wrapped JSON in prose, try to extract the JSON block
+  if(!clean.startsWith('{')&&!clean.startsWith('[')){
+    var jsonMatch=clean.match(/[\{\[][\s\S]*[\}\]]/);
+    if(jsonMatch)clean=jsonMatch[0];
+  }
+
+  if(mode==='receipt'){
+    var parsed;
+    try{parsed=JSON.parse(clean)}
+    catch(e){throw new Error('AI returned invalid JSON — try a clearer receipt image. ('+e.message.slice(0,60)+')')}
+    auditLog('receipt-swarm',{mode:mode},parsed,parsed.confidence||'unknown');
+    // ζ observe: build confidence badges
+    var conf=parsed.confidence||{};
+    function cBadge(level){var c=level==='high'?'var(--emerald)':level==='medium'?'var(--amber)':'var(--red)';return '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:'+c+';margin-left:5px;vertical-align:middle;" title="'+level+' confidence"></span>'}
+    var warnHtml='';
+    if(parsed.warnings&&parsed.warnings.length){
+      warnHtml='<div style="background:var(--amber-light);border-left:3px solid var(--amber);padding:6px 10px;margin-top:8px;font-size:0.72rem;color:var(--amber);"><strong>ζ flags:</strong> '+parsed.warnings.map(esc).join(' · ')+'</div>'
+    }
+    return{
+      html:'<strong>'+esc(parsed.vendor)+'</strong>'+cBadge(conf.vendor||'medium')+' · '+esc(parsed.date)+cBadge(conf.date||'medium')+'<br>Amount: <strong>£'+Math.abs(parsed.amount).toFixed(2)+'</strong>'+cBadge(conf.amount||'medium')+' · '+esc(parsed.category)+cBadge(conf.category||'medium')+(parsed.claimable?' ✓ Claimable':' ✗ Not claimable')+warnHtml,
+      amount:parsed.amount,vendor:parsed.vendor,category:parsed.category,date:parsed.date,
+      confidence:conf,warnings:parsed.warnings||[]
+    }
+  } else {
+    var parsedArr;
+    try{parsedArr=JSON.parse(clean)}
+    catch(e){throw new Error('AI returned invalid JSON for bank data. ('+e.message.slice(0,60)+')')}
+    auditLog('bank-parser-swarm',{mode:mode},parsedArr,'batch');
+    return parsedArr
+  }
+}
+
+function addReceiptTxn(rid,btn){
+  var r=(window._pendingReceipts||{})[rid];
+  if(!r){toast('Receipt data lost — add manually','error');return}
+  var today=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+  addTxn({date:today,desc:r.desc||'Receipt',amount:parseFloat(r.amt)||0,category:r.cat||'Other',claimable:(parseFloat(r.amt)||0)<0,source:'receipt'}).then(function(){
+    btn.textContent='✓ Added';btn.disabled=true;delete window._pendingReceipts[rid];toast('Added to transactions');refreshAll()
+  })
+}
+
+// ═══ UNIVERSAL DROP ZONE ═══
+function initDropZone(){
+  var zone=document.getElementById('drop-zone-main');
+  zone.addEventListener('dragover',function(e){e.preventDefault();zone.classList.add('dragover')});
+  zone.addEventListener('dragleave',function(){zone.classList.remove('dragover')});
+  zone.addEventListener('drop',function(e){e.preventDefault();zone.classList.remove('dragover');if(e.dataTransfer.files.length)handleDropFiles(e.dataTransfer.files)});
+
+  // Universal drag anywhere on page
+  var overlay=document.getElementById('universal-drop');
+  var dragCount=0;
+  document.addEventListener('dragenter',function(e){
+    e.preventDefault();dragCount++;overlay.classList.add('active')
+  });
+  document.addEventListener('dragleave',function(e){
+    dragCount--;if(dragCount<=0){dragCount=0;overlay.classList.remove('active')}
+  });
+  document.addEventListener('dragover',function(e){e.preventDefault()});
+  document.addEventListener('drop',function(e){
+    e.preventDefault();dragCount=0;overlay.classList.remove('active');
+    if(e.dataTransfer.files.length){
+      goTo('dropzone');
+      setTimeout(function(){handleDropFiles(e.dataTransfer.files)},100)
+    }
+  });
+}
+
+function handleDropFiles(files){
+  var queue=document.getElementById('drop-queue');
+  Array.from(files).forEach(function(file,idx){
+    if(!file.type.startsWith('image/'))return;
+    var itemId='proc-'+Date.now()+'-'+idx;
+    queue.innerHTML+='<div class="proc-item" id="'+itemId+'"><span>📎 '+esc(file.name)+'</span><span class="proc-status working">Processing...</span></div>';
+
+    var reader=new FileReader();
+    reader.onload=function(e){
+      var base64=e.target.result.split(',')[1];
+      callClaudeVision(base64,file.type||'image/jpeg','bulk').then(function(txns){
+        if(!Array.isArray(txns))txns=[txns];
+        var added=0;
+        var promises=txns.map(function(t){
+          var date=t.date||new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+          return addTxn({date:date,desc:t.desc||t.vendor||'Unknown',amount:parseFloat(t.amount)||0,category:t.category||'Other',claimable:t.claimable||false,source:'dropzone'}).then(function(){added++})
+        });
+        Promise.all(promises).then(function(){
+          var el=document.getElementById(itemId);
+          if(el)el.innerHTML='<span>✓ '+esc(file.name)+'</span><span class="proc-status done">'+added+' transaction'+(added!==1?'s':'')+' added</span>';
+          toast(added+' transaction'+(added!==1?'s':'')+' imported from '+file.name);
+          refreshAll()
+        })
+      }).catch(function(){
+        var el=document.getElementById(itemId);
+        if(el)el.innerHTML='<span>✗ '+esc(file.name)+'</span><span class="proc-status error">AI failed — try Receipt Scanner</span>';
+      })
+    };reader.readAsDataURL(file)
+  })
+}
+
+// ═══ CLIPBOARD PASTE (Ctrl+V anywhere) ═══
+document.addEventListener('paste',function(e){
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return; // don't hijack text inputs
+  var items=e.clipboardData.items;
+  var files=[];
+  for(var i=0;i<items.length;i++){
+    if(items[i].type.startsWith('image/')){
+      files.push(items[i].getAsFile());
+    }
+  }
+  if(files.length>0){
+    e.preventDefault();
+    goTo('dropzone');
+    setTimeout(function(){handleDropFiles(files)},100);
+    toast('Image pasted — processing...')
+  }
+});
+
+// ═══ BANK PARSER ═══
+function loadSample(){document.getElementById('bank-input').value='15/12/2026, ADOBE CREATIVE, -49.94\n14/12/2026, ACME LTD, 2400.00\n12/12/2026, TRAINLINE, -67.50\n11/12/2026, TESCO FUEL, -48.20\n10/12/2026, BAKER AND CO, 850.00\n08/12/2026, EE MOBILE, -35.00\n07/12/2026, AWS, -22.00\n05/12/2026, COSTA COFFEE, -4.60\n04/12/2026, PROF INDEMNITY INS, -180.00\n03/12/2026, STARTUPXYZ, 1200.00'}
+
+async function parseBank(){
+  var csv=document.getElementById('bank-input').value.trim();
+  if(!csv)return;
+  var out=document.getElementById('bank-out'),res=document.getElementById('bank-results');
+  out.style.display='block';
+  res.innerHTML='<div style="text-align:center;padding:16px;color:var(--text-muted);">🤖 Categorising...</div>';
+  pendingBankTxns=[];
+
+  try{
+    var key=getApiKey();
+    if(!key)throw new Error('No API key set');
+    var r=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        "x-api-key":key,
+        "anthropic-version":"2023-06-01",
+        "anthropic-dangerous-direct-browser-access":"true"
+      },
+      body:JSON.stringify({
+        model:"claude-sonnet-4-20250514",
+        max_tokens:2000,
+        messages:[{role:"user",content:'You are the CSV-parsing swarm (α·β·δ·ζ). Categorise for UK sole trader. ONLY JSON array. Each: {"date","desc","amount"(number),"category","claimable"(bool),"confidence":"high|medium|low"}. Income=positive, expense=negative. Mark "low" confidence for unclear rows. No markdown.\n\n'+csv}]
+      })
+    });
+    if(!r.ok)throw new Error('API '+r.status);
+    var d=await r.json();
+    var t=d.content.filter(function(i){return i.type==='text'}).map(function(i){return i.text}).join('');
+    var p=JSON.parse(t.replace(/```json|```/g,'').trim());
+    auditLog('csv-swarm',{rows:csv.split('\n').length},{parsed:p.length},'batch');
+    pendingBankTxns=p;
+    var inc=0,exp=0;
+    res.innerHTML=p.map(function(x){
+      if(x.amount>0)inc+=x.amount;else exp+=Math.abs(x.amount);
+      var confBadge=x.confidence==='low'?'<span style="color:var(--red);margin-left:4px;" title="low confidence">⚠</span>':x.confidence==='medium'?'<span style="color:var(--amber);margin-left:4px;" title="medium confidence">•</span>':'';
+      return'<div class="txn"><div class="txn-date">'+esc(x.date||'—')+'</div><div><div class="txn-desc">'+esc(x.desc)+confBadge+'</div><div class="txn-cat">'+esc(x.category)+(x.claimable?' ✓':'')+'</div></div><div class="txn-amt '+(x.amount>0?'inc':'exp')+'">'+(x.amount>0?'+':'-')+'£'+Math.abs(x.amount).toFixed(2)+'</div></div>'
+    }).join('');
+    document.getElementById('bank-stats').textContent=p.length+' · £'+inc.toFixed(0)+' in · £'+exp.toFixed(0)+' out'
+  }catch(e){
+    // Fallback: local parse
+    var lines=csv.split('\n').filter(function(l){return l.trim()});
+    pendingBankTxns=lines.map(function(l){var p=l.split(',').map(function(s){return s.trim()});var a=parseFloat(p[p.length-1])||0;return{date:p[0]||'',desc:p.slice(1,-1).join(', '),amount:a,category:'Other',claimable:a<0}});
+    res.innerHTML=pendingBankTxns.map(function(x){
+      return'<div class="txn"><div class="txn-date">'+esc(x.date||'—')+'</div><div><div class="txn-desc">'+esc(x.desc)+'</div></div><div class="txn-amt '+(x.amount>0?'inc':'exp')+'">'+(x.amount>0?'+':'-')+'£'+Math.abs(x.amount).toFixed(2)+'</div></div>'
+    }).join('');
+    document.getElementById('bank-stats').textContent='Local parse (AI unavailable) · '+pendingBankTxns.length+' rows'
+  }
+}
+
+async function importBankTxns(){
+  if(!pendingBankTxns.length)return toast('Nothing to import','error');
+  var count=0;
+  for(var i=0;i<pendingBankTxns.length;i++){
+    var t=pendingBankTxns[i];
+    // Convert date format (handle UK DD/MM/YYYY, ISO YYYY-MM-DD, or text)
+    var dateStr=(t.date||'').trim();
+    var displayDate=dateStr;
+    var months=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    // Try ISO format first (YYYY-MM-DD)
+    var isoMatch=dateStr.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if(isoMatch){
+      displayDate=parseInt(isoMatch[3])+' '+(months[parseInt(isoMatch[2])]||isoMatch[2]);
+    } else {
+      // UK DD/MM/YYYY
+      var parts=dateStr.split(/[\/\-\.]/);
+      if(parts.length===3){
+        var d=parseInt(parts[0]),m=parseInt(parts[1]);
+        if(d>=1&&d<=31&&m>=1&&m<=12){
+          displayDate=d+' '+(months[m]||parts[1]);
+        }
+      }
+    }
+    await addTxn({date:displayDate,desc:t.desc,amount:t.amount,category:t.category||'Other',claimable:t.claimable||false,source:'bank'});
+    count++;
+  }
+  pendingBankTxns=[];
+  toast(count+' transactions imported');
+  document.getElementById('bank-input').value='';
+  document.getElementById('bank-out').style.display='none';
+  refreshAll()
+}
+
+// ═══ INVOICE GENERATOR ═══
+var invHTML='';
+function generateInvoice(){
+  var num=document.getElementById('inv-num').value||'INV-000';
+  var date=document.getElementById('inv-date').value||new Date().toISOString().split('T')[0];
+  var client=document.getElementById('inv-client').value||'Client';
+  var addr=document.getElementById('inv-addr').value||'';
+  var desc=document.getElementById('inv-desc').value||'Services';
+  var amount=parseFloat(document.getElementById('inv-amount').value)||0;
+  var terms=document.getElementById('inv-terms').value;
+  var bizName=biz.name||'Your Business';
+  invHTML='<div class="inv-preview"><div style="display:flex;justify-content:space-between;align-items:flex-start;"><div><h2>'+esc(bizName)+'</h2><div style="font-size:0.72rem;color:#5c6370;">'+esc(num)+'</div></div><div style="text-align:right;font-size:0.78rem;color:#5c6370;">Date: '+date+'<br>'+esc(terms)+'</div></div><div style="margin-top:20px;font-size:0.82rem;"><strong>Bill To:</strong><br>'+esc(client)+'<br>'+(addr?esc(addr).replace(/\n/g,'<br>'):'')+'</div><table><thead><tr><th>Description</th><th style="text-align:right;">Amount</th></tr></thead><tbody><tr><td>'+esc(desc)+'</td><td style="text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:600;">£'+amount.toFixed(2)+'</td></tr></tbody></table><div style="text-align:right;font-size:1.1rem;font-weight:700;color:#1a2332;border-top:2px solid #1a2332;padding-top:8px;">Total: £'+amount.toFixed(2)+'</div><div style="margin-top:20px;font-size:0.65rem;color:#9ca3ad;border-top:1px solid #e8e6e1;padding-top:10px;">Generated by FallAccount Elite · ◊·κ=1</div></div>';
+  document.getElementById('inv-preview-area').innerHTML=invHTML
+}
+
+function downloadInvoice(){
+  if(!invHTML){alert('Generate an invoice first.');return}
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Invoice</title><style>body{font-family:Outfit,sans-serif;padding:40px;max-width:700px;margin:0 auto;color:#1a1e24;}.inv-preview h2{font-family:Georgia,serif;font-size:1.3rem;margin-bottom:4px;}table{width:100%;border-collapse:collapse;margin:16px 0;font-size:0.85rem;}th{text-align:left;padding:8px;border-bottom:2px solid #1a2332;font-size:0.7rem;text-transform:uppercase;color:#5c6370;}td{padding:8px;border-bottom:1px solid #e8e6e1;}</style></head><body>'+invHTML+'</body></html>';
+  dlBlob(html,'text/html',(document.getElementById('inv-num').value||'invoice')+'.html');
+}
+
+async function saveInvoiceRecord(){
+  var num=document.getElementById('inv-num').value;
+  var client=document.getElementById('inv-client').value;
+  var amount=parseFloat(document.getElementById('inv-amount').value)||0;
+  if(!client){toast('Enter a client name','error');return}
+  await addInv({num:num,client:client,amount:amount,status:'pending',date:document.getElementById('inv-date').value});
+  // Also add as income transaction
+  var today=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+  await addTxn({date:today,desc:client+' — '+num,amount:amount,category:'Sales',claimable:false,source:'invoice'});
+  toast('Invoice saved + income recorded');
+  refreshAll();
+  // Clear form
+  document.getElementById('inv-client').value='';
+  document.getElementById('inv-addr').value='';
+  document.getElementById('inv-desc').value='';
+  document.getElementById('inv-amount').value='';
+  document.getElementById('inv-preview-area').innerHTML='<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:0.82rem;">Invoice saved. Fill new details for next invoice.</div>';
+  invHTML='';
+}
+
+// ═══ TAX GUIDE ═══
+function rGuide(items){document.getElementById('tg-list').innerHTML=items.map(function(e){var gi=guide.indexOf(e);return'<div class="tg-entry"><div class="tg-q" onclick="toggleG('+gi+')"><span class="tg-q-text">'+e.q+'</span><span class="tg-tag '+e.t+'">'+({yes:'✓ Claimable',no:'✗ Not Allowed',partial:'◐ Partial',info:'ℹ Info'}[e.t])+'</span><span style="color:var(--text-muted)">+</span></div><div class="tg-a" id="tg-'+gi+'">'+e.a+'</div></div>'}).join('');document.getElementById('tg-count').textContent=items.length+' of '+guide.length+' entries'}
+function rCats(){document.getElementById('tg-cats').innerHTML=guideCats.map(function(c){return'<div class="tg-cat'+(c==='All'?' active':'')+'" onclick="fCat(\''+c+'\',this)">'+c+'</div>'}).join('')}
+function toggleG(i){var el=document.getElementById('tg-'+i);if(el)el.style.display=el.style.display==='block'?'none':'block'}
+function filterGuide(){var q=document.getElementById('tg-search').value.toLowerCase().trim();document.querySelectorAll('.tg-cat').forEach(function(b){b.classList.remove('active')});document.querySelector('.tg-cat').classList.add('active');if(!q){rGuide(guide);return}rGuide(guide.filter(function(e){return e.q.toLowerCase().includes(q)||e.a.toLowerCase().includes(q)}))}
+function fCat(c,el){document.getElementById('tg-search').value='';document.querySelectorAll('.tg-cat').forEach(function(b){b.classList.remove('active')});el.classList.add('active');if(c==='All'){rGuide(guide);return}rGuide(guide.filter(function(e){return e.c===c}))}
+
+// ═══ BUSINESS PROFILE ═══
+function saveBiz(){biz={name:document.getElementById('biz-name').value,trade:document.getElementById('biz-trade').value,revenue:document.getElementById('biz-revenue').value,vat:document.getElementById('biz-vat').value,workplace:document.getElementById('biz-workplace').value,hours:document.getElementById('biz-hours').value,vehicle:document.getElementById('biz-vehicle').value,miles:document.getElementById('biz-miles').value,software:document.getElementById('biz-software').value,phone:document.getElementById('biz-phone').value,insurance:document.getElementById('biz-insurance').value};saveD('biz',biz);document.getElementById('biz-saved').style.display='block';setTimeout(function(){document.getElementById('biz-saved').style.display='none'},4000);toast('Business profile saved');refreshAll()}
+function clearBiz(){['biz-name','biz-trade','biz-revenue','biz-hours','biz-miles','biz-software','biz-phone','biz-insurance'].forEach(function(id){document.getElementById(id).value=''});document.getElementById('biz-vat').selectedIndex=0;document.getElementById('biz-workplace').selectedIndex=0;document.getElementById('biz-vehicle').selectedIndex=0;biz={};saveD('biz',{});toast('Business profile cleared');refreshAll()}
+async function loadBiz(){var s=await loadD('biz');if(s&&s.name){biz=s;['name','trade','revenue','vat','workplace','hours','vehicle','miles','software','phone','insurance'].forEach(function(k){var el=document.getElementById('biz-'+k);if(el&&biz[k])el.value=biz[k]})}}
+
+// ═══ DATA EXPORT / IMPORT / NUKE ═══
+async function exportAllData(){
+  var txns=await getAllTxns();
+  var invs=await getAllInvs();
+  var audit=await getAudit();
+  var data={version:'FallAccount-Elite-v4',exported:new Date().toISOString(),business:biz,transactions:txns,invoices:invs,audit:audit};
+  dlBlob(JSON.stringify(data,null,2),'application/json','FallAccount-Export-'+new Date().toISOString().split('T')[0]+'.json');
+  toast('All data exported ('+txns.length+' txns · '+invs.length+' inv · '+audit.length+' audit)')
+}
+
+async function exportCSV(){
+  var txns=await getAllTxns();
+  var rows=['Date,Description,Amount,Category,Claimable,Source'];
+  txns.forEach(function(t){rows.push([t.date,'"'+esc(t.desc)+'"',t.amount,t.category,t.claimable,t.source||''].join(','))});
+  dlBlob(rows.join('\n'),'text/csv','FallAccount-Transactions-'+new Date().toISOString().split('T')[0]+'.csv');
+  toast('CSV exported')
+}
+
+async function importAllData(input){
+  if(!input.files.length)return;
+  var reader=new FileReader();
+  reader.onload=async function(e){
+    try{
+      var data=JSON.parse(e.target.result);
+      if(data.business){biz=data.business;await saveD('biz',biz);await loadBiz()}
+      if(data.transactions){for(var i=0;i<data.transactions.length;i++){var t=data.transactions[i];delete t.id;await addTxn(t)}}
+      if(data.invoices){for(var i=0;i<data.invoices.length;i++){var inv=data.invoices[i];delete inv.id;await addInv(inv)}}
+      toast('Data imported: '+(data.transactions?data.transactions.length:0)+' transactions, '+(data.invoices?data.invoices.length:0)+' invoices');
+      refreshAll()
+    }catch(err){toast('Import failed: invalid JSON','error')}
+  };reader.readAsText(input.files[0]);
+  input.value='';
+}
+
+async function nukeData(){
+  if(!confirm('DELETE ALL DATA? This cannot be undone.\n\nTransactions, invoices, business profile, AI audit log — everything goes.'))return;
+  if(!confirm('Are you absolutely sure? Last chance.'))return;
+  await clearAllTxns();
+  await clearAudit();
+  try{var d=await openDB();await new Promise(function(r){var t=d.transaction('invoices','readwrite');t.objectStore('invoices').clear();t.oncomplete=function(){r(true)}})}catch(e){}
+  biz={};await saveD('biz',{});
+  ['biz-name','biz-trade','biz-revenue','biz-hours','biz-miles','biz-software','biz-phone','biz-insurance'].forEach(function(id){var el=document.getElementById(id);if(el)el.value=''});
+  document.getElementById('biz-vat').selectedIndex=0;
+  document.getElementById('biz-workplace').selectedIndex=0;
+  document.getElementById('biz-vehicle').selectedIndex=0;
+  toast('All data deleted (API key preserved — delete separately if needed)');
+  refreshAll()
+}
+
+// ═══ HELPERS ═══
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function dlBlob(content,type,filename){var blob=new Blob([content],{type:type});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();URL.revokeObjectURL(a.href)}
+
+// ═══ INIT ═══
+(async function(){
+  // Load theme
+  var theme=await loadD('theme');
+  if(theme)document.documentElement.setAttribute('data-theme',theme);
+
+  // Load biz
+  await loadBiz();
+
+  // Init date
+  document.getElementById('inv-date').value=new Date().toISOString().split('T')[0];
+
+  // Render static
+  rCats();
+  rGuide(guide);
+
+  // Init zones
+  initReceipt();
+  initDropZone();
+
+  // AI Chat
+  aiConvo.push({role:'bot',text:'Welcome to FallAccount Elite v4 — 8+1 Swarm. Your sovereign tax advisor for 2026/27'+(biz.name?' — trained on <strong>'+esc(biz.name)+'</strong>':'')+'. '+(getApiKey()?'Ask anything. Drop receipts anywhere or paste with Ctrl+V.':'<span style="color:var(--amber);">No API key set — click 🔑 in the sidebar to enable AI features.</span>')});
+  rChat();
+
+  // Chat events
+  document.getElementById('ai-send').addEventListener('click',function(){var v=document.getElementById('ai-input').value;document.getElementById('ai-input').value='';askAI(v)});
+  document.getElementById('ai-input').addEventListener('keydown',function(e){if(e.key==='Enter'){var v=this.value;this.value='';askAI(v)}});
+
+  // Update API key indicator
+  updateApiKeyIndicator();
+
+  // Full refresh from IndexedDB
+  await refreshAll();
+})();
+</script>
+</body>
+</html>
