@@ -1232,6 +1232,130 @@ async function exportQuarterlyReport(){
 </script>
 <!-- /◊·κ FALLMESH SHIM -->
 
+<!-- ◊·κ KONOMI LICENCE — Ed25519 (drop-in, no deps) -->
+<script>
+(function konomiShim(){
+  // NODE is defined by host tool's mesh shim. If missing, fail gracefully.
+  if (!window.NODE) return;
+  var KONOMI = window.KONOMI = {
+    pubkey_b64: 'bQWcb/SgeWVIEa0H+YYGhzohMfo9zcDysqZEvzYtXTw=',
+    tier: 'dead',
+    features: [],
+    payload: null,
+    expires_at: null
+  };
+  function b64Bytes(b64){ var bin=atob(b64); var b=new Uint8Array(bin.length); for(var i=0;i<bin.length;i++) b[i]=bin.charCodeAt(i); return b; }
+  function canonJSON(o){
+    if (o===null||typeof o!=='object') return JSON.stringify(o);
+    if (Array.isArray(o)) return '['+o.map(canonJSON).join(',')+']';
+    var k=Object.keys(o).sort();
+    return '{'+k.map(function(x){return JSON.stringify(x)+':'+canonJSON(o[x]);}).join(',')+'}';
+  }
+  async function verifyLicence(env){
+    if (!env) return { ok:false, error:'no envelope' };
+    if (!window.crypto || !window.crypto.subtle) return { ok:false, error:'no WebCrypto' };
+    try {
+      var raw = atob(env);
+      var parsed = JSON.parse(raw);
+      var payload = parsed.payload, sig = parsed.sig;
+      if (payload.tool_id && payload.tool_id !== NODE.id) {
+        return { ok:false, error:'licence for ' + payload.tool_id + ', not ' + NODE.id };
+      }
+      if (payload.expires && new Date(payload.expires) < new Date()) {
+        return { ok:false, error:'expired ' + payload.expires };
+      }
+      var pubRaw = b64Bytes(KONOMI.pubkey_b64);
+      var key = await crypto.subtle.importKey('raw', pubRaw, { name:'Ed25519' }, false, ['verify']);
+      var sigBytes = b64Bytes(sig);
+      var msg = new TextEncoder().encode(canonJSON(payload));
+      var ok = await crypto.subtle.verify({ name:'Ed25519' }, key, sigBytes, msg);
+      if (!ok) return { ok:false, error:'signature invalid' };
+      return { ok:true, payload:payload };
+    } catch (e) { return { ok:false, error:e.message }; }
+  }
+  async function activateLicence(env){
+    var v = await verifyLicence(env);
+    if (!v.ok) {
+      try { localStorage.setItem('konomi_last_error', v.error); } catch(_){}
+      return v;
+    }
+    try { localStorage.setItem('konomi_licence_' + NODE.id, env); } catch(_){}
+    KONOMI.tier = v.payload.tier;
+    KONOMI.features = v.payload.features || [];
+    KONOMI.payload = v.payload;
+    KONOMI.expires_at = v.payload.expires;
+    updateBadge();
+    return v;
+  }
+  function hasFeature(f){ return KONOMI.features.indexOf(f) >= 0; }
+  function isDead(){ return KONOMI.tier === 'dead'; }
+  function updateBadge(){
+    var el = document.getElementById('konomi-badge');
+    if (!el) return;
+    var t = KONOMI.tier;
+    var c = t==='dead'?'#8a8a8a':t==='trial'?'#c2a060':'#3a9a72';
+    el.textContent = '◊ ' + t.toUpperCase();
+    el.style.color = c;
+    el.title = 'Konomi tier: ' + t + (KONOMI.expires_at ? ' · expires ' + KONOMI.expires_at : '');
+  }
+  function injectBadge(){
+    if (document.getElementById('konomi-badge')) return;
+    var el = document.createElement('div');
+    el.id = 'konomi-badge';
+    el.style.cssText = 'position:fixed;bottom:12px;left:12px;background:rgba(0,0,0,.65);color:#8a8a8a;padding:5px 10px;border-radius:6px;font-family:monospace;font-size:11px;cursor:pointer;z-index:9999;letter-spacing:.06em;border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(6px)';
+    el.textContent = '◊ DEAD';
+    el.onclick = function(){ showLicenceDialog(); };
+    document.body.appendChild(el);
+  }
+  function showLicenceDialog(){
+    var current = KONOMI.payload ? JSON.stringify(KONOMI.payload, null, 2) : '(DEAD mode — no licence active)';
+    var modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;font-family:system-ui,sans-serif';
+    modal.innerHTML = '<div style="background:#161821;border:1px solid #2a2f3a;border-radius:12px;padding:24px;max-width:560px;width:100%;color:#dbe1ea"><h3 style="margin:0 0 12px;color:#e6e8ee">◊·κ Konomi Licence</h3><p style="margin:0 0 8px;font-size:12px;color:#8a8a8a">Tool: '+(NODE.name||NODE.id)+' · Prime: '+(NODE.prime||'-')+'</p><pre style="background:#0c0e12;padding:10px;border-radius:6px;font-size:11px;color:#a8b0bc;max-height:200px;overflow:auto;margin:8px 0">'+current.replace(/[<>]/g,'')+'</pre><p style="font-size:12px;color:#8a8a8a;margin:12px 0 6px">Paste a signed licence envelope to activate Pro/Business/Enterprise:</p><textarea id="kn-paste" style="width:100%;min-height:80px;background:#0c0e12;color:#dbe1ea;border:1px solid #2a2f3a;border-radius:6px;padding:8px;font-family:monospace;font-size:11px;resize:vertical"></textarea><div style="display:flex;gap:8px;margin-top:12px"><button id="kn-activate" style="background:#5b8def;color:#fff;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-weight:600">activate</button><button id="kn-close" style="background:transparent;color:#8a8a8a;border:1px solid #2a2f3a;padding:8px 14px;border-radius:6px;cursor:pointer">close</button><span id="kn-msg" style="margin-left:auto;font-size:11px;color:#c84a4a;align-self:center"></span></div></div>';
+    document.body.appendChild(modal);
+    modal.querySelector('#kn-close').onclick = function(){ modal.remove(); };
+    modal.querySelector('#kn-activate').onclick = async function(){
+      var paste = modal.querySelector('#kn-paste').value.trim();
+      if (!paste) { modal.querySelector('#kn-msg').textContent = 'paste an envelope first'; return; }
+      var v = await activateLicence(paste);
+      if (v.ok) { modal.querySelector('#kn-msg').style.color='#3a9a72'; modal.querySelector('#kn-msg').textContent='✓ '+v.payload.tier+' activated'; setTimeout(function(){ modal.remove(); }, 1200); }
+      else { modal.querySelector('#kn-msg').textContent = 'rejected: ' + v.error; }
+    };
+    modal.onclick = function(e){ if (e.target===modal) modal.remove(); };
+  }
+  window.konomi = {
+    verifyLicence: verifyLicence,
+    activateLicence: activateLicence,
+    hasFeature: hasFeature,
+    isDead: isDead,
+    showDialog: showLicenceDialog
+  };
+  // Boot: try saved licence
+  (async function(){
+    if (document.readyState === 'loading') {
+      await new Promise(function(r){ document.addEventListener('DOMContentLoaded', r, { once:true }); });
+    }
+    injectBadge();
+    var saved = null;
+    try { saved = localStorage.getItem('konomi_licence_' + NODE.id); } catch(_){}
+    if (saved) {
+      var v = await verifyLicence(saved);
+      if (v.ok) {
+        KONOMI.tier = v.payload.tier;
+        KONOMI.features = v.payload.features || [];
+        KONOMI.payload = v.payload;
+        KONOMI.expires_at = v.payload.expires;
+        updateBadge();
+        try { console.log('%c◊·κ', 'color:#c2a060;font-weight:bold', NODE.name + ' · ' + v.payload.tier + ' tier active'); } catch(_){}
+        return;
+      }
+    }
+    try { console.log('%c◊', 'color:#8a8a8a;font-weight:bold', NODE.name + ' · DEAD mode · click badge to activate'); } catch(_){}
+  })();
+})();
+</script>
+<!-- /◊·κ KONOMI LICENCE -->
+
 </body></html>';
   dlBlob(html,'text/html','MTD-'+cq.label.replace(/\s/g,'-')+'-Report.html');
   toast('Quarterly report exported')
