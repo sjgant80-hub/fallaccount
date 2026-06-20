@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "fallaccount",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8761", "--directory", "C:/Users/sjgan/Downloads/fallaccount"],
+      "port": 8761
+    }
+  ]
+}
