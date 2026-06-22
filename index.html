@@ -347,7 +347,8 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
 (function (root) {
   'use strict';
 
-  const FALL_KIT_VERSION = '1.1.0';
+  const FALL_KIT_VERSION = '1.2.0';
+  const KCC_MINT_URL = 'https://sjgant80-hub.github.io/kcc-mint/';
 
   // ─── Model registry ──────────────────────────────────────────────
   const WEBLLM_MODELS = {
@@ -656,6 +657,16 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
     document.head.appendChild(s);
   }
 
+  // ─── KCC Mint launcher (v1.2 · fork-this-seed shortcut) ──────────
+  function openMint() {
+    const slug = (STATE.config.seedName || location.hostname.split('.')[0] || 'seed').replace(/[^a-z0-9-]/gi, '-').toLowerCase();
+    const name = document.title.replace(/^[◊·\s]+/, '').split('·')[0].trim() || slug;
+    const url = location.href.split('?')[0].split('#')[0];
+    const desc = document.querySelector('meta[name="description"]')?.content?.slice(0, 200) || '';
+    const params = new URLSearchParams({ fork: '1', parent_slug: slug, parent_name: name, parent_url: url, parent_desc: desc });
+    window.open(KCC_MINT_URL + '?' + params.toString(), '_blank', 'noopener');
+  }
+
   // ─── Init ────────────────────────────────────────────────────────
   function init(opts) {
     opts = opts || {};
@@ -673,6 +684,18 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
     else {
       chip.style.cssText += ';position:fixed;bottom:14px;left:14px;z-index:9998;box-shadow:0 4px 14px rgba(0,0,0,.4)';
       document.body.appendChild(chip);
+    }
+    // v1.2 · floating mint button next to chip
+    if (!$('#fk-mint-btn') && !opts.hideMint) {
+      const mintBtn = document.createElement('button');
+      mintBtn.id = 'fk-mint-btn';
+      mintBtn.title = 'Mint a fork of this seed as a KCC bundle · provenance economy';
+      mintBtn.innerHTML = '<span style="font-size:13px">✦</span> mint fork';
+      mintBtn.style.cssText = 'position:fixed;bottom:14px;left:130px;z-index:9998;display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:3px;font-family:ui-monospace,Menlo,monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;cursor:pointer;border:1px solid #c08a3a;color:#c08a3a;background:rgba(10,10,15,.7);box-shadow:0 4px 14px rgba(0,0,0,.4)';
+      mintBtn.onmouseover = () => { mintBtn.style.background = '#c08a3a'; mintBtn.style.color = '#0a0a0a'; };
+      mintBtn.onmouseout  = () => { mintBtn.style.background = 'rgba(10,10,15,.7)'; mintBtn.style.color = '#c08a3a'; };
+      mintBtn.onclick = openMint;
+      document.body.appendChild(mintBtn);
     }
     renderAiChip();
     return { version: FALL_KIT_VERSION, mounted: true };
@@ -692,6 +715,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
     meshStart: meshStart,
     meshPost: meshPost,
     notify: notify,
+    openMint: openMint,  // v1.2 · launch kcc-mint with this seed prefilled as parent
     MODELS: WEBLLM_MODELS,
     PROVIDERS: T3_PROVIDERS,
     state: STATE,
