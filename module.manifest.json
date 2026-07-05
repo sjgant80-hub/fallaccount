@@ -1,0 +1,18 @@
+{
+  "$schema": "https://sjgant80-hub.github.io/fallhub/modules/manifest.schema.json",
+  "name": "fallaccount",
+  "version": "1.0.0",
+  "publisher": "AI-Native Solutions",
+  "publisher_url": "https://www.ai-nativesolutions.com/",
+  "licence": "MIT",
+  "description": "Sovereign bookkeeping · VAT · MTD-ready · P&L timeline · multi-location split · tips accounting",
+  "provides": ["bookkeeping","vat_returns","mtd_compliance","pnl_timeline"],
+  "tools": [],
+  "kernel_extension": {},
+  "compatible_verticals": ["*"],
+  "requires": ["byok_adapter@>=1.0.0"],
+  "ui_surfaces": [],
+  "mit": true,
+  "konomi_seal": "◊·κ=1",
+  "estate": true
+}
