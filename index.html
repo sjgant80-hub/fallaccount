@@ -356,22 +356,19 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
     'llama-3b':  { id: 'Llama-3.2-3B-Instruct-q4f16_1-MLC',   size: '~2GB',   label: '3B · balanced · default · most laptops' },
     'qwen-7b':   { id: 'Qwen2.5-7B-Instruct-q4f16_1-MLC',     size: '~5GB',   label: '7B · capable · needs decent GPU (M-series Mac / 8GB+ VRAM)' },
     'llama-8b':  { id: 'Llama-3.1-8B-Instruct-q4f16_1-MLC',   size: '~5GB',   label: '8B · common · needs decent GPU' },
-    'llama-70b': { id: 'Llama-3.1-70B-Instruct-q4f16_1-MLC',  size: '~40GB',  label: '70B · frontier · needs serious GPU + 64GB+ RAM' },
-  };
+    'llama-70b': { id: 'Llama-3.1-70B-Instruct-q4f16_1-MLC',  size: '~40GB',  label: '70B · frontier · needs serious GPU + 64GB+ RAM' }};
   const DEFAULT_MODEL = 'llama-3b';
 
   const T3_PROVIDERS = {
     anthropic: { label: 'Anthropic Claude', models: ['claude-sonnet-4-5','claude-opus-4-7','claude-haiku-4-5'], default: 'claude-sonnet-4-5', url: 'https://api.anthropic.com/v1/messages' },
     openai:    { label: 'OpenAI',           models: ['gpt-4o','gpt-4o-mini','o1-mini'],                          default: 'gpt-4o-mini',      url: 'https://api.openai.com/v1/chat/completions' },
-    google:    { label: 'Google Gemini',    models: ['gemini-1.5-pro','gemini-1.5-flash','gemini-2.0-flash-exp'], default: 'gemini-1.5-flash', url: 'https://generativelanguage.googleapis.com/v1beta/models/' },
-  };
+    google:    { label: 'Google Gemini',    models: ['gemini-1.5-pro','gemini-1.5-flash','gemini-2.0-flash-exp'], default: 'gemini-1.5-flash', url: 'https://generativelanguage.googleapis.com/v1beta/models/' }};
 
   // ─── State ───────────────────────────────────────────────────────
   const STATE = {
     config: loadConfig(),
     ai: { ready: false, loading: false, progress: 0, engine: null, model: null },
-    mesh: { active: false, peers: new Map(), bc: null, signal: null },
-  };
+    mesh: { active: false, peers: new Map(), bc: null, signal: null }};
 
   function loadConfig() {
     try { return JSON.parse(localStorage.getItem('fall-kit.config') || '{}'); }
@@ -438,8 +435,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
     if (tier === 'T2' && STATE.ai.ready && STATE.ai.engine) {
       const r = await STATE.ai.engine.chat.completions.create({
         messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userMsg }],
-        max_tokens: maxTokens,
-      });
+        max_tokens: maxTokens});
       return r.choices[0].message.content;
     }
     if (tier === 'T3' && STATE.config.api_key && STATE.config.api_provider) {
@@ -456,8 +452,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
       const r = await fetch(T3_PROVIDERS.anthropic.url, {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
-        body: JSON.stringify({ model, max_tokens: maxTokens, system: sys, messages: [{ role: 'user', content: msg }] }),
-      });
+        body: JSON.stringify({ model, max_tokens: maxTokens, system: sys, messages: [{ role: 'user', content: msg }] })});
       if (!r.ok) throw new Error('Anthropic ' + r.status + ': ' + (await r.text()).slice(0, 200));
       const j = await r.json();
       return j.content[0].text;
@@ -466,8 +461,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
       const r = await fetch(T3_PROVIDERS.openai.url, {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'Authorization': 'Bearer ' + key },
-        body: JSON.stringify({ model, max_tokens: maxTokens, messages: [{ role: 'system', content: sys }, { role: 'user', content: msg }] }),
-      });
+        body: JSON.stringify({ model, max_tokens: maxTokens, messages: [{ role: 'system', content: sys }, { role: 'user', content: msg }] })});
       if (!r.ok) throw new Error('OpenAI ' + r.status);
       const j = await r.json();
       return j.choices[0].message.content;
@@ -476,8 +470,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
       const r = await fetch(T3_PROVIDERS.google.url + model + ':generateContent?key=' + encodeURIComponent(key), {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: sys + '\n\n---\n\n' + msg }] }], generationConfig: { maxOutputTokens: maxTokens } }),
-      });
+        body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: sys + '\n\n---\n\n' + msg }] }], generationConfig: { maxOutputTokens: maxTokens } })});
       if (!r.ok) throw new Error('Google ' + r.status);
       const j = await r.json();
       return j.candidates[0].content.parts[0].text;
@@ -718,8 +711,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
     openMint: openMint,  // v1.2 · launch kcc-mint with this seed prefilled as parent
     MODELS: WEBLLM_MODELS,
     PROVIDERS: T3_PROVIDERS,
-    state: STATE,
-  };
+    state: STATE};
 })(typeof window !== 'undefined' ? window : globalThis);
 
 </script>
@@ -794,7 +786,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
   <div class="welcome">
     <div class="welcome-icon">📊</div>
     <div class="welcome-title">Welcome to FallAccount Elite</div>
-    <div class="welcome-sub">Your accounting autopilot. This file runs entirely in your browser. No cloud. No login. No subscription. Drop receipts anywhere, paste bank data, ask tax questions, generate invoices — all sovereign. Ctrl+V to paste images anywhere.</div>
+    <div class="welcome-sub">Your accounting autopilot. This file runs entirely in your browser. No cloud. No login. not subscription-based. Drop receipts anywhere, paste bank data, ask tax questions, generate invoices — all sovereign. Ctrl+V to paste images anywhere.</div>
     <div class="welcome-steps">
       <div class="step"><div class="step-num">STEP 1</div><div class="step-title">Set Up Business</div><div class="step-desc">Click "My Business" — enter your details so the AI personalises everything.</div></div>
       <div class="step"><div class="step-num">STEP 2</div><div class="step-title">Drop Anything</div><div class="step-desc">Drag receipts anywhere, paste screenshots (Ctrl+V), or use Bank Parser for CSV data.</div></div>
@@ -809,7 +801,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
   <div class="hiw-hero">
     <div style="font-size:2.5rem;margin-bottom:12px;">🛠️</div>
     <div class="hiw-hero-title">How FallAccount works</div>
-    <div class="hiw-hero-sub">Plain English. For sole traders, freelancers, tradespeople, and anyone who'd rather not pay £30/month for accounting software. Your books, on your phone or laptop. Done.</div>
+    <div class="hiw-hero-sub">Plain English. For sole traders, freelancers, tradespeople, and anyone who'd rather not pay TBAnth for accounting software. Your books, on your phone or laptop. Done.</div>
   </div>
 
   <!-- SECTION 1: THE 3 STEPS -->
@@ -850,7 +842,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
       </div>
       <div class="hiw-feat">
         <div class="hiw-feat-icon">📋</div>
-        <div><div class="hiw-feat-title">Quarterly figures for HMRC</div><div class="hiw-feat-desc">From April 2026 anyone earning over £50k has to send quarterly summaries (Making Tax Digital). One button generates them. Hand to accountant or punch into HMRC.</div></div>
+        <div><div class="hiw-feat-title">Quarterly figures for HMRC</div><div class="hiw-feat-desc">From April 2026 anyone earning over TBAk has to send quarterly summaries (Making Tax Digital). One button generates them. Hand to accountant or punch into HMRC.</div></div>
       </div>
       <div class="hiw-feat">
         <div class="hiw-feat-icon">📄</div>
@@ -879,7 +871,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
       <div class="hiw-trust-item">
         <div class="hiw-trust-icon">💸</div>
         <div class="hiw-trust-label">Costs nothing</div>
-        <div class="hiw-trust-desc">No subscription. No "free trial" that converts. No card on file. We don't have your card on file because we don't have anything on file.</div>
+        <div class="hiw-trust-desc">not subscription-based. No "free trial" that converts. No card on file. We don't have your card on file because we don't have anything on file.</div>
       </div>
       <div class="hiw-trust-item">
         <div class="hiw-trust-icon">📵</div>
@@ -939,7 +931,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
         </div>
         <div style="border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:12px;">
           <strong style="color:var(--navy);">When's my tax due?</strong><br>
-          Online self-assessment by <strong>31 January</strong> each year (for the tax year that ended the previous 5 April). From April 2026 you may also need to send quarterly summaries if you earn over £50k (the MTD Quarterly Reports tab handles that).
+          Online self-assessment by <strong>31 January</strong> each year (for the tax year that ended the previous 5 April). From April 2026 you may also need to send quarterly summaries if you earn over TBAk (the MTD Quarterly Reports tab handles that).
         </div>
         <div style="border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:12px;">
           <strong style="color:var(--navy);">What can I actually claim?</strong><br>
@@ -968,14 +960,14 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
 <div class="page" id="p-overview">
   <div class="page-header"><div class="page-title">Financial Overview</div><div class="page-sub">Tax Year 2026/27 · Live from your data</div></div>
   <div class="kpi-row">
-    <div class="kpi"><div class="kpi-label">Revenue YTD</div><div class="kpi-val" style="color:var(--emerald)" id="kpi-revenue">£0</div><div class="kpi-note" id="kpi-rev-note">Add transactions to begin</div></div>
-    <div class="kpi"><div class="kpi-label">Expenses YTD</div><div class="kpi-val" style="color:var(--red)" id="kpi-expenses">£0</div><div class="kpi-note" id="kpi-exp-note">—</div></div>
-    <div class="kpi"><div class="kpi-label">Taxable Profit</div><div class="kpi-val" style="color:var(--navy)" id="kpi-profit">£0</div><div class="kpi-note">After deductions</div></div>
-    <div class="kpi"><div class="kpi-label">Estimated Tax</div><div class="kpi-val" style="color:var(--amber)" id="kpi-tax">£0</div><div class="kpi-note" id="kpi-tax-note">—</div></div>
+    <div class="kpi"><div class="kpi-label">Revenue YTD</div><div class="kpi-val" style="color:var(--emerald)" id="kpi-revenue">TBA</div><div class="kpi-note" id="kpi-rev-note">Add transactions to begin</div></div>
+    <div class="kpi"><div class="kpi-label">Expenses YTD</div><div class="kpi-val" style="color:var(--red)" id="kpi-expenses">TBA</div><div class="kpi-note" id="kpi-exp-note">—</div></div>
+    <div class="kpi"><div class="kpi-label">Taxable Profit</div><div class="kpi-val" style="color:var(--navy)" id="kpi-profit">TBA</div><div class="kpi-note">After deductions</div></div>
+    <div class="kpi"><div class="kpi-label">Estimated Tax</div><div class="kpi-val" style="color:var(--amber)" id="kpi-tax">TBA</div><div class="kpi-note" id="kpi-tax-note">—</div></div>
   </div>
   <div class="set-aside-box" id="ov-set-aside">
     <div style="font-size:0.65rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--emerald);margin-bottom:4px;">MOVE TO TAX POT THIS MONTH</div>
-    <div class="set-aside-amount" id="ov-monthly">£0</div>
+    <div class="set-aside-amount" id="ov-monthly">TBA</div>
     <div class="set-aside-label" id="ov-set-label">—</div>
     <div class="set-aside-progress"><div class="set-aside-fill" id="ov-set-fill" style="width:0%"></div></div>
   </div>
@@ -1118,7 +1110,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
 <!-- DEDUCTIONS -->
 <div class="page" id="p-deductions">
   <div class="page-header"><div class="page-title">AI Deduction Finder</div><div class="page-sub" id="ded-subtitle">Identified from your expenses and profile</div></div>
-  <div class="card"><div class="card-h"><div class="card-t">Active Deductions</div><div class="card-a" id="ded-total">Total: £0/yr</div></div><div class="card-b" id="all-deds"></div></div>
+  <div class="card"><div class="card-h"><div class="card-t">Active Deductions</div><div class="card-a" id="ded-total">Total: TBA</div></div><div class="card-b" id="all-deds"></div></div>
   <div class="card"><div class="card-h"><div class="card-t" style="color:var(--amber)">⚠ Suggested</div></div><div class="card-b" id="sug-deds"></div></div>
 </div>
 
@@ -1127,14 +1119,14 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
   <div class="page-header"><div class="page-title">Tax Forecast</div><div class="page-sub">Live estimate · recalculates from your transactions</div></div>
   <div class="set-aside-box" id="fc-set-aside">
     <div style="font-size:0.65rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--emerald);margin-bottom:4px;">MONTHLY TAX SET-ASIDE</div>
-    <div class="set-aside-amount" id="fc-monthly">£0</div>
+    <div class="set-aside-amount" id="fc-monthly">TBA</div>
     <div class="set-aside-label" id="fc-set-label">—</div>
     <div class="set-aside-progress"><div class="set-aside-fill" id="fc-set-fill" style="width:0%"></div></div>
   </div>
   <div class="kpi-row" style="grid-template-columns:repeat(3,1fr);">
-    <div class="kpi"><div class="kpi-label">Income Tax</div><div class="kpi-val" style="color:var(--red)" id="fc-it">£0</div></div>
-    <div class="kpi"><div class="kpi-label">National Insurance</div><div class="kpi-val" style="color:var(--amber)" id="fc-ni">£0</div></div>
-    <div class="kpi"><div class="kpi-label">Total Due</div><div class="kpi-val" style="color:var(--navy)" id="fc-total">£0</div></div>
+    <div class="kpi"><div class="kpi-label">Income Tax</div><div class="kpi-val" style="color:var(--red)" id="fc-it">TBA</div></div>
+    <div class="kpi"><div class="kpi-label">National Insurance</div><div class="kpi-val" style="color:var(--amber)" id="fc-ni">TBA</div></div>
+    <div class="kpi"><div class="kpi-label">Total Due</div><div class="kpi-val" style="color:var(--navy)" id="fc-total">TBA</div></div>
   </div>
   <div class="card"><div class="card-h"><div class="card-t">Breakdown</div></div><div class="card-b" id="fc-breakdown"></div></div>
 </div>
@@ -1161,7 +1153,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
   <div class="card"><div class="card-h"><div class="card-t">Details</div></div><div class="card-b"><div class="g2">
     <div class="field"><label class="label">Business Name</label><input class="input" id="biz-name" placeholder="e.g. James Harrison Web Design"></div>
     <div class="field"><label class="label">Trade</label><input class="input" id="biz-trade" placeholder="e.g. Freelance web developer"></div>
-    <div class="field"><label class="label">Annual Revenue</label><input class="input" id="biz-revenue" placeholder="e.g. £55,000"></div>
+    <div class="field"><label class="label">Annual Revenue</label><input class="input" id="biz-revenue" placeholder="e.g. TBA"></div>
     <div class="field"><label class="label">VAT?</label><select class="input" id="biz-vat" style="appearance:auto;"><option>No</option><option>Yes</option></select></div>
   </div></div></div>
   <div class="card"><div class="card-h"><div class="card-t">Work Setup</div></div><div class="card-b"><div class="g2">
@@ -1171,9 +1163,9 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
     <div class="field"><label class="label">Miles/year</label><input class="input" type="number" id="biz-miles" placeholder="3000"></div>
   </div></div></div>
   <div class="card"><div class="card-h"><div class="card-t">Software & Phone</div></div><div class="card-b">
-    <div class="field"><label class="label">Software subs</label><textarea class="textarea" id="biz-software" placeholder="Adobe £50/mo, Figma £12/mo"></textarea></div>
-    <div class="field"><label class="label">Phone</label><input class="input" id="biz-phone" placeholder="£35/mo, ~70% business"></div>
-    <div class="field"><label class="label">Insurance</label><input class="input" id="biz-insurance" placeholder="Prof indemnity £320/yr"></div>
+    <div class="field"><label class="label">Software subs</label><textarea class="textarea" id="biz-software" placeholder="Adobe TBA, Figma TBA"></textarea></div>
+    <div class="field"><label class="label">Phone</label><input class="input" id="biz-phone" placeholder="TBA, ~70% business"></div>
+    <div class="field"><label class="label">Insurance</label><input class="input" id="biz-insurance" placeholder="Prof indemnity TBA"></div>
   </div></div>
   <div style="display:flex;gap:8px;margin-top:4px;"><button class="btn btn-g" onclick="saveBiz()">💾 Save</button><button class="btn btn-o" onclick="clearBiz()">Clear</button></div>
   <div id="biz-saved" style="display:none;margin-top:10px;padding:12px 16px;background:var(--emerald-light);border:1px solid var(--border);border-radius:4px;font-size:0.82rem;color:var(--emerald);font-weight:600;">✓ Saved. AI now trained on your business.</div>
@@ -1222,7 +1214,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
 // ═══ TAX GUIDE DATA (33 entries) ═══
 var guide=[
 {q:'Can I claim mileage?',c:'Travel',t:'yes',a:'<strong>Yes.</strong> <span class="rate">45p/mile</span> first 10,000, <span class="rate">25p</span> after. Keep a log. Commute = no.<span class="ref">HMRC: Simplified expenses</span>'},
-{q:'Can I claim working from home?',c:'Home Office',t:'yes',a:'<strong>Yes.</strong> Simplified: <span class="rate">25-50hrs=£10/mo, 51-100=£18, 101+=£26</span>. Or actual costs (proportion of rent, utilities).<span class="ref">HMRC: BIM47820</span>'},
+{q:'Can I claim working from home?',c:'Home Office',t:'yes',a:'<strong>Yes.</strong> Simplified: <span class="rate">25-50hrs=TBA, 51-100=TBA, 101+=TBA</span>. Or actual costs (proportion of rent, utilities).<span class="ref">HMRC: BIM47820</span>'},
 {q:'Can I claim my phone?',c:'Phone',t:'partial',a:'<strong>Business portion only.</strong> 70% business = claim 70%. Separate line = 100%.<span class="ref">HMRC: Wholly and exclusively</span>'},
 {q:'Can I claim broadband?',c:'Home Office',t:'partial',a:'<strong>Business portion.</strong> 40-60% typical if WFH. Don\'t double-claim with simplified expenses.<span class="ref">HMRC: BIM47825</span>'},
 {q:'Can I claim train tickets?',c:'Travel',t:'yes',a:'<strong>Yes.</strong> Business journeys only. <span class="warn">Commute = never.</span><span class="ref">HMRC: BIM37600</span>'},
@@ -1230,7 +1222,7 @@ var guide=[
 {q:'Can I claim hotels?',c:'Travel',t:'yes',a:'<strong>Yes.</strong> Reasonable accommodation + meals on overnight trips.<span class="ref">HMRC: Travel expenses</span>'},
 {q:'Can I claim client lunches?',c:'Not Allowable',t:'no',a:'<strong>No.</strong> <span class="warn">Business entertaining = not allowable</span> for sole traders.<span class="ref">HMRC: BIM45000</span>'},
 {q:'Can I claim food?',c:'Travel',t:'partial',a:'<strong>Only travelling overnight.</strong> <span class="warn">Daily lunch = never.</span><span class="ref">HMRC: BIM37670</span>'},
-{q:'Can I claim a laptop?',c:'Equipment',t:'yes',a:'<strong>Yes — capital allowance.</strong> <span class="rate">AIA: full cost in year of purchase.</span> Business proportion only.<span class="ref">HMRC: AIA</span>'},
+{q:'Can I claim a laptop?',c:'Equipment',t:'yes',a:'<strong>Yes — capital allowance.</strong> <span class="rate">AIA: full cost in year of Access.</span> Business proportion only.<span class="ref">HMRC: AIA</span>'},
 {q:'Can I claim software?',c:'Software',t:'yes',a:'<strong>Yes.</strong> Adobe, hosting, SaaS tools — all allowable.<span class="ref">HMRC: Revenue expenses</span>'},
 {q:'Can I claim stationery?',c:'Office',t:'yes',a:'<strong>Yes.</strong> Ink, paper, envelopes, stamps.<span class="ref">HMRC: Revenue expenses</span>'},
 {q:'Can I claim marketing?',c:'Marketing',t:'yes',a:'<strong>Yes.</strong> Ads, website, business cards, SEO.<span class="ref">HMRC: Revenue expenses</span>'},
@@ -1239,22 +1231,21 @@ var guide=[
 {q:'Can I claim bank charges?',c:'Financial',t:'yes',a:'<strong>Yes.</strong> Account fees, card processing.<span class="ref">HMRC: Revenue expenses</span>'},
 {q:'Can I claim clothing?',c:'Not Allowable',t:'no',a:'<span class="warn">No</span> — unless protective/uniform/costume.<span class="ref">HMRC: BIM37900</span>'},
 {q:'Can I claim gym?',c:'Not Allowable',t:'no',a:'<span class="warn">No</span> — unless fitness IS your business.<span class="ref">HMRC: Dual purpose</span>'},
-{q:'Income Tax rates 2026/27?',c:'Tax Rates',t:'info',a:'<span class="rate">PA: £12,570</span>. <span class="rate">20%</span> to £50,270. <span class="rate">40%</span> to £125,140. <span class="rate">45%</span> above.<span class="ref">HMRC: Tax rates</span>'},
-{q:'National Insurance rates?',c:'Tax Rates',t:'info',a:'<span class="rate">Class 2: £3.45/wk</span>. <span class="rate">Class 4: 6%</span> on £12,570-£50,270, <span class="rate">2%</span> above.<span class="ref">HMRC: NI</span>'},
+{q:'Income Tax rates 2026/27?',c:'Tax Rates',t:'info',a:'<span class="rate">PA: TBA</span>. <span class="rate">20%</span> to TBA. <span class="rate">40%</span> to TBA. <span class="rate">45%</span> above.<span class="ref">HMRC: Tax rates</span>'},
+{q:'National Insurance rates?',c:'Tax Rates',t:'info',a:'<span class="rate">Class 2: TBA/wk</span>. <span class="rate">Class 4: 6%</span> on TBA-TBA, <span class="rate">2%</span> above.<span class="ref">HMRC: NI</span>'},
 {q:'Tax payment deadlines?',c:'Deadlines',t:'info',a:'<span class="rate">5 Apr 2027</span> year end. <span class="rate">31 Jan 2028</span> payment due. <span class="rate">31 Jul 2028</span> 2nd payment on account.<span class="ref">HMRC: SA deadlines</span>'},
-{q:'What is MTD?',c:'MTD',t:'info',a:'Quarterly digital reporting. Mandatory Apr 2026 for >£50k, Apr 2027 >£30k, Apr 2028 >£20k.<span class="ref">HMRC: MTD for IT</span>'},
+{q:'What is MTD?',c:'MTD',t:'info',a:'Quarterly digital reporting. Mandatory Apr 2026 for >TBAk, Apr 2027 >TBAk, Apr 2028 >TBAk.<span class="ref">HMRC: MTD for IT</span>'},
 {q:'MTD deadlines?',c:'MTD',t:'info',a:'Q1 due 5 Aug · Q2 due 5 Nov · Q3 due 5 Feb · Q4 due 5 Apr · Final due 31 Jan.<span class="ref">HMRC: MTD schedule</span>'},
-{q:'Missed MTD deadline?',c:'MTD',t:'info',a:'Points system. 4 points = <span class="rate">£200 penalty</span>. Each late after = £200 more.<span class="ref">HMRC: Late penalties</span>'},
-{q:'Simplified Expenses?',c:'Simplified',t:'info',a:'Flat rates: <span class="rate">Vehicles 45p/25p</span> · <span class="rate">Home £10-26/mo</span> · <span class="rate">Premises £350-650/mo</span>.<span class="ref">HMRC: Simplified</span>'},
-{q:'Capital Allowances?',c:'Equipment',t:'info',a:'<span class="rate">AIA: £1,000,000</span>. Full cost of equipment in year of purchase. Cars have special rules.<span class="ref">HMRC: Capital allowances</span>'},
+{q:'Missed MTD deadline?',c:'MTD',t:'info',a:'Points system. 4 points = <span class="rate">TBA penalty</span>. Each late after = TBA more.<span class="ref">HMRC: Late penalties</span>'},
+{q:'Simplified Expenses?',c:'Simplified',t:'info',a:'Flat rates: <span class="rate">Vehicles 45p/25p</span> · <span class="rate">Home TBA-TBA</span> · <span class="rate">Premises TBA-TBA</span>.<span class="ref">HMRC: Simplified</span>'},
+{q:'Capital Allowances?',c:'Equipment',t:'info',a:'<span class="rate">AIA: TBA</span>. Full cost of equipment in year of Access. Cars have special rules.<span class="ref">HMRC: Capital allowances</span>'},
 {q:'Record keeping?',c:'Records',t:'info',a:'<strong>5 years</strong> after 31 Jan deadline. MTD = digital records. Photo of receipt counts.<span class="ref">HMRC: Records</span>'},
 {q:'Register self-employed?',c:'Getting Started',t:'info',a:'<strong>Yes.</strong> By 5 October of your second tax year.<span class="ref">HMRC: Register SA</span>'},
-{q:'Trading Allowance?',c:'Getting Started',t:'info',a:'Under <span class="rate">£1,000</span> income = no registration needed.<span class="ref">HMRC: Trading Allowance</span>'},
-{q:'VAT threshold?',c:'Tax Rates',t:'info',a:'<span class="rate">£90,000</span> rolling 12 months. Register within 30 days.<span class="ref">HMRC: VAT</span>'},
-{q:'Pension contributions?',c:'Financial',t:'partial',a:'Not a business expense but <strong>tax relief</strong> applies. Limit: <span class="rate">£60,000/yr</span>.<span class="ref">HMRC: Pensions</span>'},
+{q:'Trading Allowance?',c:'Getting Started',t:'info',a:'Under <span class="rate">TBA</span> income = no registration needed.<span class="ref">HMRC: Trading Allowance</span>'},
+{q:'VAT threshold?',c:'Tax Rates',t:'info',a:'<span class="rate">TBA</span> rolling 12 months. Register within 30 days.<span class="ref">HMRC: VAT</span>'},
+{q:'Pension contributions?',c:'Financial',t:'partial',a:'Not a business expense but <strong>tax relief</strong> applies. Limit: <span class="rate">TBA</span>.<span class="ref">HMRC: Pensions</span>'},
 {q:'Claim a vehicle?',c:'Equipment',t:'yes',a:'Mileage (45p/25p) OR actual costs. One method per vehicle.<span class="ref">HMRC: Vehicle expenses</span>'},
-{q:'Training courses?',c:'Professional',t:'partial',a:'<strong>Updating skills = yes. New career = no.</strong> Books also claimable.<span class="ref">HMRC: BIM35660</span>'},
-];
+{q:'Training courses?',c:'Professional',t:'partial',a:'<strong>Updating skills = yes. New career = no.</strong> Books also claimable.<span class="ref">HMRC: BIM35660</span>'}];
 var guideCats=['All','Home Office','Travel','Equipment','Software','Professional','Marketing','Office','Phone','Insurance','Financial','Not Allowable','Tax Rates','MTD','Simplified','Records','Deadlines','Getting Started'];
 
 // ═══ STATE ═══
@@ -1262,9 +1253,9 @@ var biz={}, aiConvo=[], pendingBankTxns=[];
 
 // ═══ SUGGESTED DEDUCTIONS ═══
 var sugDeds=[
-{n:'Training & CPD',d:'Courses, books, conferences',s:'~£200'},
-{n:'Broadband (40%)',d:'Home broadband business portion',s:'~£168'},
-{n:'Accounting Software',d:'FallAccount replaces paid tools',s:'£0'}
+{n:'Training & CPD',d:'Courses, books, conferences',s:'~TBA'},
+{n:'Broadband (40%)',d:'Home broadband business portion',s:'~TBA'},
+{n:'Accounting Software',d:'FallAccount replaces paid tools',s:'TBA'}
 ];
 
 // ═══ IndexedDB ═══
@@ -1341,7 +1332,7 @@ function calcDeductions(){
     if(nums){var yr=nums.reduce(function(s,n){return s+parseInt(n.replace('£',''))},0)*12;deds.push({n:'Software Subscriptions',d:biz.software.substring(0,50),s:'£'+yr});total+=yr}
   }
   if(biz.insurance){
-    var m=biz.insurance.match(/£([\d,]+)/);
+    var m=biz.insurance.match(/£([\d]+)/);
     if(m){var yr=parseInt(m[1].replace(',',''));deds.push({n:'Professional Insurance',d:biz.insurance.substring(0,50),s:'£'+yr});total+=yr}
   }
   return{items:deds,total:total}
@@ -1631,7 +1622,7 @@ function askAI(text){
   if(sendBtn){sendBtn.disabled=true;sendBtn.textContent='...'}
   aiConvo.push({role:'user',text:text.replace(/</g,'&lt;')});rChat();
   var ctx='';if(biz.name){ctx='\n\nBUSINESS: '+biz.name;if(biz.trade)ctx+=', '+biz.trade;if(biz.revenue)ctx+=', Revenue: '+biz.revenue;if(biz.hours)ctx+=', Home hrs/wk: '+biz.hours;if(biz.miles)ctx+=', Miles/yr: '+biz.miles}
-  var sys='You are FallAccount AI — 8+1 swarm (α scaffold · β build · γ cache · δ run · ε gate · ζ observe · η score · θ format · Ω orchestrate) operating as UK Chartered Accountant autopilot for 2026/27.\n\nTAX YEAR 2026/27 KNOWLEDGE:\nPA £12,570 · Basic 20% (to £50,270) · Higher 40% (to £125,140) · Additional 45%\nNI Class 2 £3.45/wk · Class 4 6% on £12,570-£50,270, 2% above\nMileage 45p/25p · Home £10-26/mo · AIA £1M · VAT £90k · MTD Apr 2026 >£50k\nClient entertaining NEVER allowable.\n\nBehave as an AUTOPILOT: do the work, give specific £ numbers, no padding. If uncertain about facts flag with [VERIFY]. If tax year changed since your training flag [YEAR-CHECK].'+ctx;
+  var sys='You are FallAccount AI — 8+1 swarm (α scaffold · β build · γ cache · δ run · ε gate · ζ observe · η score · θ format · Ω orchestrate) operating as UK Chartered Accountant autopilot for 2026/27.\n\nTAX YEAR 2026/27 KNOWLEDGE:\nPA TBA · Basic 20% (to TBA) · Higher 40% (to TBA) · Additional 45%\nNI Class 2 TBA/wk · Class 4 6% on TBA-TBA, 2% above\nMileage 45p/25p · Home TBA-TBA · AIA TBAM · VAT TBAk · MTD Apr 2026 >TBAk\nClient entertaining NEVER allowable.\n\nBehave as an AUTOPILOT: do the work, give specific £ numbers, no padding. If uncertain about facts flag with [VERIFY]. If tax year changed since your training flag [YEAR-CHECK].'+ctx;
   aiConvo.push({role:'bot',text:'<em style="color:rgba(255,255,255,0.3)">Thinking...</em>'});rChat();
   callClaude(sys,text).then(function(r){
     aiConvo[aiConvo.length-1].text=r;rChat()
@@ -1753,7 +1744,7 @@ async function callLLMText(sys,msg){
   auditLog('chat-ai',msg,text,confidence);
   text=text.replace(/\[VERIFY\]/g,'<span class="ai-warn">[VERIFY]</span>');
   text=text.replace(/\[YEAR-CHECK\]/g,'<span class="ai-warn">[YEAR-CHECK]</span>');
-  return text.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/£([\d,]+)/g,'<span class="ai-rate">£$1</span>').replace(/\n/g,'<br>')
+  return text.replace(/\*\*(.+?)\*\*/g,'<strong>TBA</strong>').replace(/£([\d]+)/g,'<span class="ai-rate">£TBA</span>').replace(/\n/g,'<br>')
 }
 // Backward compat alias
 var callClaude=callLLMText;
