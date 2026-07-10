@@ -1,0 +1,22 @@
+# fallaccount
+
+> fallaccount is a sovereign, MIT-licensed tool in the AI-Native Solutions estate. Listed on FallMarket. Ed25519-signed. Runs on your infrastructure.
+
+## Canonical URL
+
+https://sjgant80-hub.github.io/fallaccount/
+
+## What it is
+
+A sovereign tool that ships as source, runs offline, and outlasts the vendor. Part of a 1330+ listing catalog under @ai-native-solutions/*.
+
+## Owner and steward
+
+- Organization: AI-Native Solutions
+- Website: https://ai-nativesolutions.com
+- Marketplace: https://sjgant80-hub.github.io/fallmarket/
+- Registry entry: https://sjgant80-hub.github.io/fallmarket/listing.html?id=fallaccount
+
+## License
+
+MIT. See https://github.com/sjgant80-hub/fallaccount/blob/main/LICENSE.
