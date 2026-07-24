@@ -1261,20 +1261,110 @@ var sugDeds=[
 // ═══ IndexedDB ═══
 var DB_NAME='FallAccountElite3';
 var DB_VER=3;
-function openDB(){return new Promise(function(r,j){var q=indexedDB.open(DB_NAME,DB_VER);q.onupgradeneeded=function(e){var db=e.target.result;if(!db.objectStoreNames.contains('data'))db.createObjectStore('data');if(!db.objectStoreNames.contains('transactions')){var ts=db.createObjectStore('transactions',{keyPath:'id',autoIncrement:true});ts.createIndex('date','date')}if(!db.objectStoreNames.contains('invoices')){db.createObjectStore('invoices',{keyPath:'id',autoIncrement:true})}if(!db.objectStoreNames.contains('audit')){var as=db.createObjectStore('audit',{keyPath:'id',autoIncrement:true});as.createIndex('ts','ts');as.createIndex('agent','agent')}};q.onsuccess=function(){r(q.result)};q.onerror=function(){j(q.error)}})}
-async function saveD(k,v){try{var d=await openDB();return new Promise(function(r){var t=d.transaction('data','readwrite');t.objectStore('data').put(v,k);t.oncomplete=function(){r(true)}})}catch(e){return false}}
-async function loadD(k){try{var d=await openDB();return new Promise(function(r){var q=d.transaction('data','readonly').objectStore('data').get(k);q.onsuccess=function(){r(q.result)};q.onerror=function(){r(null)}})}catch(e){return null}}
+// ═══ KONOMIUM VAULT · encryption-at-rest graft ═══════════════════════════════
+// The accounting ledger (transactions, invoices, business profile, audit) is encrypted at rest with
+// AES-GCM-256; the key is derived from a master seed the user holds (PBKDF2-SHA256, 600k rounds).
+// Migration-safe: an existing PLAINTEXT database is detected on first unlock and encrypted in place —
+// no data is lost. Deletion stays local + user-initiated (there is no remote wipe). This makes the
+// "your data stays in your browser" promise real AT REST; it does NOT make you exempt from GDPR or
+// any law — it makes your obligations cheaper to meet.
+var VAULT={key:null,unlocking:null};
+var VAULT_PLAINTEXT_KEYS={'theme':1,'__vault_meta__':1}; // never encrypted (UI pref + public KDF meta)
+var _subtle=(self.crypto&&self.crypto.subtle)||null;
+var _te=new TextEncoder(),_td=new TextDecoder();
+function _b64e(u8){var s='';for(var i=0;i<u8.length;i++)s+=String.fromCharCode(u8[i]);return btoa(s)}
+function _b64d(str){var b=atob(str),u=new Uint8Array(b.length);for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u}
+function _rand(n){return self.crypto.getRandomValues(new Uint8Array(n))}
+async function _deriveKey(seed,salt,iter){var base=await _subtle.importKey('raw',_te.encode(seed),'PBKDF2',false,['deriveKey']);return _subtle.deriveKey({name:'PBKDF2',salt:salt,iterations:iter,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
+async function vaultEncrypt(value){var iv=_rand(12);var ct=new Uint8Array(await _subtle.encrypt({name:'AES-GCM',iv:iv},VAULT.key,_te.encode(JSON.stringify(value))));return {__enc:1,iv:_b64e(iv),ct:_b64e(ct)}}
+async function vaultDecrypt(env){var pt=await _subtle.decrypt({name:'AES-GCM',iv:_b64d(env.iv)},VAULT.key,_b64d(env.ct));return JSON.parse(_td.decode(pt))}
+function vIsEnc(o){return !!(o&&typeof o==='object'&&o.__enc===1&&o.iv&&o.ct)}
+// value-in / envelope-out (falls back to plaintext only on a browser with no Web Crypto)
+async function vPut(value){return VAULT.key?vaultEncrypt(value):value}
+// envelope-or-legacy in / value out; re-attaches the keyPath id for keyPath stores
+async function vGet(rec,id){if(!vIsEnc(rec))return rec;var p=await vaultDecrypt(rec);if(id!==undefined&&p&&typeof p==='object')p.id=id;return p}
+
+function rawOpenDB(){return new Promise(function(r,j){var q=indexedDB.open(DB_NAME,DB_VER);q.onupgradeneeded=function(e){var db=e.target.result;if(!db.objectStoreNames.contains('data'))db.createObjectStore('data');if(!db.objectStoreNames.contains('transactions')){var ts=db.createObjectStore('transactions',{keyPath:'id',autoIncrement:true});ts.createIndex('date','date')}if(!db.objectStoreNames.contains('invoices')){db.createObjectStore('invoices',{keyPath:'id',autoIncrement:true})}if(!db.objectStoreNames.contains('audit')){var as=db.createObjectStore('audit',{keyPath:'id',autoIncrement:true});as.createIndex('ts','ts');as.createIndex('agent','agent')}};q.onsuccess=function(){r(q.result)};q.onerror=function(){j(q.error)}})}
+// Gated opener — no store op proceeds until the vault is unlocked.
+async function openDB(){await ensureUnlocked();return rawOpenDB()}
+
+function _rawGet(db,store,key){return new Promise(function(r){var q=db.transaction(store,'readonly').objectStore(store).get(key);q.onsuccess=function(){r(q.result)};q.onerror=function(){r(undefined)}})}
+function _rawGetAll(db,store){return new Promise(function(r){var q=db.transaction(store,'readonly').objectStore(store).getAll();q.onsuccess=function(){r(q.result||[])};q.onerror=function(){r([])}})}
+function _rawGetAllKeys(db,store){return new Promise(function(r){var q=db.transaction(store,'readonly').objectStore(store).getAllKeys();q.onsuccess=function(){r(q.result||[])};q.onerror=function(){r([])}})}
+function _rawPut(db,store,val,key){return new Promise(function(r){var t=db.transaction(store,'readwrite');var s=t.objectStore(store);if(key===undefined)s.put(val);else s.put(val,key);t.oncomplete=function(){r(true)};t.onerror=function(){r(false)}})}
+
+async function _vaultHasLegacyPlaintext(db){var stores=['transactions','invoices','audit'];for(var i=0;i<stores.length;i++){var all=await _rawGetAll(db,stores[i]);for(var a=0;a<all.length;a++)if(!vIsEnc(all[a]))return true}var keys=await _rawGetAllKeys(db,'data');for(var j=0;j<keys.length;j++){if(VAULT_PLAINTEXT_KEYS[keys[j]])continue;var v=await _rawGet(db,'data',keys[j]);if(!vIsEnc(v))return true}return false}
+async function _vaultMigrate(db){var stores=['transactions','invoices','audit'];for(var i=0;i<stores.length;i++){var all=await _rawGetAll(db,stores[i]);for(var k=0;k<all.length;k++){var rec=all[k];if(vIsEnc(rec))continue;var id=rec.id;var env=await vaultEncrypt(rec);if(id!==undefined)env.id=id;await _rawPut(db,stores[i],env)}}var keys=await _rawGetAllKeys(db,'data');for(var j=0;j<keys.length;j++){var key=keys[j];if(VAULT_PLAINTEXT_KEYS[key])continue;var val=await _rawGet(db,'data',key);if(vIsEnc(val))continue;var e2=await vaultEncrypt(val);await _rawPut(db,'data',e2,key)}}
+
+async function ensureUnlocked(){
+  if(VAULT.key||VAULT.ready)return true;
+  if(VAULT.unlocking)return VAULT.unlocking;
+  VAULT.unlocking=(async function(){
+    if(!_subtle){VAULT.ready=true;console.warn('FallAccount: Web Crypto unavailable — data stored WITHOUT encryption.');return true;}
+    var db=await rawOpenDB();
+    var meta=await _rawGet(db,'data','__vault_meta__');
+    var hasLegacy=!meta&&await _vaultHasLegacyPlaintext(db);
+    var m=_vaultBuildModal(!meta,hasLegacy);
+    while(true){
+      var seed=await m.ask();
+      try{
+        if(!meta){
+          var salt=_rand(16);
+          VAULT.key=await _deriveKey(seed,salt,600000);
+          if(hasLegacy){m.working('Encrypting your existing data…');await _vaultMigrate(db);}
+          var check=await vaultEncrypt('konomium-ok');
+          await _rawPut(db,'data',{salt:_b64e(salt),iterations:600000,check:check},'__vault_meta__');
+        }else{
+          VAULT.key=await _deriveKey(seed,_b64d(meta.salt),meta.iterations||600000);
+          var ok=null;try{ok=await vaultDecrypt(meta.check)}catch(e){ok=null}
+          if(ok!=='konomium-ok'){VAULT.key=null;m.error('Wrong master seed — try again.');continue}
+        }
+        VAULT.ready=true;m.close();return true;
+      }catch(e){VAULT.key=null;m.error('Could not unlock: '+(e&&e.message||e))}
+    }
+  })();
+  return VAULT.unlocking;
+}
+function vaultLock(){VAULT.key=null;VAULT.ready=false;VAULT.unlocking=null;location.reload()}
+
+function _vaultBuildModal(isSetup,hasLegacy){
+  var ov=document.createElement('div');ov.id='vault-overlay';
+  ov.style.cssText='position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:#0a0a0f;font-family:system-ui,-apple-system,sans-serif;padding:20px';
+  var title=isSetup?(hasLegacy?'Encrypt your existing data':'Create your vault'):'Unlock your vault';
+  var blurb=isSetup?(hasLegacy?'This version encrypts your accounting data at rest. Choose a master seed — your existing transactions, invoices and business details will be encrypted with it now. There is no recovery if you forget it, so store it safely.':'Choose a master seed to encrypt your data at rest. There is no recovery if you forget it, so store it safely.'):'Enter your master seed to decrypt your data. It never leaves this device.';
+  ov.innerHTML='<div style="width:100%;max-width:430px;background:#14141f;border:1px solid #2a2a3a;border-radius:12px;padding:26px;color:#e0e0e8;box-shadow:0 20px 60px rgba(0,0,0,.5)">'
+    +'<div style="font-size:20px;font-weight:600;margin-bottom:8px">🔒 '+title+'</div>'
+    +'<div style="font-size:13px;color:#9a9aa8;line-height:1.55;margin-bottom:18px">'+blurb+'</div>'
+    +'<input id="vault-seed" type="password" placeholder="master seed (min 8 characters)" autocomplete="off" spellcheck="false" style="width:100%;padding:11px;background:#0a0a0f;border:1px solid #2a2a3a;border-radius:7px;color:#e0e0e8;font-size:14px;margin-bottom:10px;box-sizing:border-box">'
+    +(isSetup?'<input id="vault-seed2" type="password" placeholder="confirm master seed" autocomplete="off" spellcheck="false" style="width:100%;padding:11px;background:#0a0a0f;border:1px solid #2a2a3a;border-radius:7px;color:#e0e0e8;font-size:14px;margin-bottom:10px;box-sizing:border-box">':'')
+    +'<button id="vault-go" style="width:100%;padding:12px;background:#6c8cff;color:#fff;border:none;border-radius:7px;font-size:14px;font-weight:600;cursor:pointer">'+(isSetup?'Create & encrypt':'Unlock')+'</button>'
+    +'<div id="vault-err" style="font-size:12.5px;color:#e74c3c;margin-top:10px;min-height:16px"></div>'
+    +'<div style="font-size:11px;color:#6e6a5e;margin-top:14px;line-height:1.5">AES-GCM 256 · derived from your seed · stays on this device · not exempt from GDPR — makes your obligations cheaper to meet.</div>'
+    +'</div>';
+  document.body.appendChild(ov);
+  var seedEl=ov.querySelector('#vault-seed'),seed2El=ov.querySelector('#vault-seed2'),goEl=ov.querySelector('#vault-go'),errEl=ov.querySelector('#vault-err');
+  setTimeout(function(){try{seedEl.focus()}catch(e){}},60);
+  var pendingRes=null;
+  function submit(){var s=seedEl.value||'';if(s.length<8){errEl.textContent='Master seed must be at least 8 characters.';return}if(isSetup&&seed2El&&s!==seed2El.value){errEl.textContent='The two seeds do not match.';return}errEl.style.color='#9a9aa8';errEl.textContent='Working…';if(pendingRes){var rr=pendingRes;pendingRes=null;rr(s)}}
+  goEl.addEventListener('click',submit);
+  seedEl.addEventListener('keydown',function(e){if(e.key==='Enter')submit()});
+  if(seed2El)seed2El.addEventListener('keydown',function(e){if(e.key==='Enter')submit()});
+  return {ask:function(){return new Promise(function(res){pendingRes=res})},error:function(msg){errEl.style.color='#e74c3c';errEl.textContent=msg},working:function(msg){errEl.style.color='#9a9aa8';errEl.textContent=msg},close:function(){ov.remove()}};
+}
+
+async function saveD(k,v){try{var d=await openDB();var val=VAULT_PLAINTEXT_KEYS[k]?v:await vPut(v);return _rawPut(d,'data',val,k)}catch(e){return false}}
+async function loadD(k){try{var d=await openDB();var rec=await _rawGet(d,'data',k);if(rec===undefined||rec===null)return null;return VAULT_PLAINTEXT_KEYS[k]?rec:await vGet(rec)}catch(e){return null}}
 
 // ═══ TRANSACTION STORE ═══
-async function addTxn(txn){try{var d=await openDB();return new Promise(function(r){var t=d.transaction('transactions','readwrite');var s=t.objectStore('transactions');txn.ts=Date.now();var req=s.add(txn);req.onsuccess=function(){r(req.result)};t.onerror=function(){r(null)}})}catch(e){return null}}
-async function getAllTxns(){try{var d=await openDB();return new Promise(function(r){var t=d.transaction('transactions','readonly');var s=t.objectStore('transactions');var req=s.getAll();req.onsuccess=function(){r(req.result||[])};req.onerror=function(){r([])}})}catch(e){return[]}}
+async function addTxn(txn){try{var d=await openDB();txn.ts=Date.now();var env=await vPut(txn);return new Promise(function(r){var t=d.transaction('transactions','readwrite');var req=t.objectStore('transactions').add(env);req.onsuccess=function(){r(req.result)};t.onerror=function(){r(null)}})}catch(e){return null}}
+async function getAllTxns(){try{var d=await openDB();var all=await _rawGetAll(d,'transactions');var out=[];for(var i=0;i<all.length;i++)out.push(await vGet(all[i],all[i]&&all[i].id));return out}catch(e){return[]}}
 async function deleteTxn(id){try{var d=await openDB();return new Promise(function(r){var t=d.transaction('transactions','readwrite');t.objectStore('transactions').delete(id);t.oncomplete=function(){r(true)}})}catch(e){return false}}
 async function clearAllTxns(){try{var d=await openDB();return new Promise(function(r){var t=d.transaction('transactions','readwrite');t.objectStore('transactions').clear();t.oncomplete=function(){r(true)}})}catch(e){return false}}
 
 // ═══ INVOICE STORE ═══
-async function addInv(inv){try{var d=await openDB();return new Promise(function(r){var t=d.transaction('invoices','readwrite');inv.ts=Date.now();var req=t.objectStore('invoices').add(inv);req.onsuccess=function(){r(req.result)};t.onerror=function(){r(null)}})}catch(e){return null}}
-async function getAllInvs(){try{var d=await openDB();return new Promise(function(r){var t=d.transaction('invoices','readonly');var req=t.objectStore('invoices').getAll();req.onsuccess=function(){r(req.result||[])};req.onerror=function(){r([])}})}catch(e){return[]}}
-async function updateInvStatus(id,status){try{var d=await openDB();return new Promise(function(r){var t=d.transaction('invoices','readwrite');var s=t.objectStore('invoices');var g=s.get(id);g.onsuccess=function(){var inv=g.result;if(inv){inv.status=status;s.put(inv)}};t.oncomplete=function(){r(true)}})}catch(e){return false}}
+async function addInv(inv){try{var d=await openDB();inv.ts=Date.now();var env=await vPut(inv);return new Promise(function(r){var t=d.transaction('invoices','readwrite');var req=t.objectStore('invoices').add(env);req.onsuccess=function(){r(req.result)};t.onerror=function(){r(null)}})}catch(e){return null}}
+async function getAllInvs(){try{var d=await openDB();var all=await _rawGetAll(d,'invoices');var out=[];for(var i=0;i<all.length;i++)out.push(await vGet(all[i],all[i]&&all[i].id));return out}catch(e){return[]}}
+async function updateInvStatus(id,status){try{var d=await openDB();var rec=await _rawGet(d,'invoices',id);if(!rec)return false;var inv=await vGet(rec,id);inv.status=status;var env=await vPut(inv);if(env&&env.__enc)env.id=id;return _rawPut(d,'invoices',env)}catch(e){return false}}
 
 // ═══ TOAST ═══
 function toast(msg,type){var el=document.getElementById('toast');el.textContent=msg;el.className='toast '+(type||'success');el.classList.add('show');setTimeout(function(){el.classList.remove('show')},3000)}
@@ -1753,17 +1843,19 @@ var callClaude=callLLMText;
 async function auditLog(agent,input,output,confidence){
   try{
     var d=await openDB();
-    var t=d.transaction('audit','readwrite');
-    t.objectStore('audit').add({
+    var rec={
       ts:new Date().toISOString(),
       agent:agent,
       input:(typeof input==='string'?input:JSON.stringify(input)).slice(0,500),
       output:(typeof output==='string'?output:JSON.stringify(output)).slice(0,500),
       confidence:confidence||'unknown'
-    });
+    };
+    var env=await vPut(rec);
+    var t=d.transaction('audit','readwrite');
+    t.objectStore('audit').add(env);
   }catch(e){console.warn('Audit log failed:',e)}
 }
-async function getAudit(){try{var d=await openDB();return new Promise(function(r){var t=d.transaction('audit','readonly');var req=t.objectStore('audit').getAll();req.onsuccess=function(){r(req.result||[])};req.onerror=function(){r([])}})}catch(e){return[]}}
+async function getAudit(){try{var d=await openDB();var all=await _rawGetAll(d,'audit');var out=[];for(var i=0;i<all.length;i++)out.push(await vGet(all[i],all[i]&&all[i].id));return out}catch(e){return[]}}
 async function clearAudit(){try{var d=await openDB();return new Promise(function(r){var t=d.transaction('audit','readwrite');t.objectStore('audit').clear();t.oncomplete=function(){r(true)}})}catch(e){return false}}
 
 // ═══ AUDIT LOG VIEWER (for HMRC defensibility) ═══
