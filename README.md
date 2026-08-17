@@ -8,7 +8,7 @@
 
 ## What it is
 
-A complete accounting autopilot for UK sole traders that runs entirely in your browser. No server. not subscription-based. No account to create. Open the file, use it, close the tab. Your data is yours.
+A complete accounting autopilot for UK sole traders that runs entirely in your browser. No server. No subscription. No account to create. Open the file, use it, close the tab. Your data is yours.
 
 - 📸 **Receipt scanning** — drop a photo, AI extracts vendor, amount, category, tax claimability
 - 📊 **Bank CSV categorisation** — paste statement rows, get them sorted and ready to import
@@ -152,7 +152,7 @@ Eighteen months ago I couldn't code. Today I ship production AI systems as singl
 
 ### What I build
 
-- **Sovereign single-file tools** — HTML + IndexedDB, no server, not subscription-based, no lock-in
+- **Sovereign single-file tools** — HTML + IndexedDB, no server, no subscription, no lock-in
 - **8+1 AI swarm architectures** — anti-hallucination by design, not guardrails
 - **Accounting, legal research, shadow work, sales automation, and whatever else needs the same pattern**
 - **AI that does the work, not AI that talks about doing the work**
@@ -172,7 +172,7 @@ Eighteen months ago I couldn't code. Today I ship production AI systems as singl
 
 FallAccount Elite exists because accounting software is broken.
 
-The market is divided between (a) spreadsheets that are fine until they aren't, (b) "easy" cloud solutions that cost TBA-30/month forever and hold your data hostage, and (c) proper accountants at TBA-150/hour. Sole traders earning TBA-50k/year get squeezed: too advanced for spreadsheets, too expensive for cloud plus accountant, too small for enterprise ERP.
+The market is divided between (a) spreadsheets that are fine until they aren't, (b) "easy" cloud solutions that cost £15-30/month forever and hold your data hostage, and (c) proper accountants at £80-150/hour. Sole traders earning £20-50k/year get squeezed: too advanced for spreadsheets, too expensive for cloud plus accountant, too small for enterprise ERP.
 
 This tool replaces most of that. One file. Does the receipt scanning, the categorisation, the quarterly MTD reports, the tax estimation, the invoicing. Uses AI where AI helps. Doesn't use AI where it's not needed. Tells you when it's not confident.
 
