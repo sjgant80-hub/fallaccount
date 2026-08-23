@@ -1,0 +1,12 @@
+[
+  {
+    "mutation": "<= → <",
+    "snippet": "if (incomePence <= r.paTaperStartPence) return r.personalAllowancePence;",
+    "reason": "boundary-equivalent early return in taperedPA: at income === paTaperStart the tapering path computes over=0, so PA - floor(0/2) = full PA — identical to the short-circuit. No input separates <= from <. Correctness-preserving guard, verified by the £100,000 boundary test."
+  },
+  {
+    "mutation": ">= → >",
+    "snippet": "if (incomePence >= r.paGoneAtPence) return 0;",
+    "reason": "boundary-equivalent early return in taperedPA: at income === paGoneAt the tapering path computes over=(gone-start) and PA - floor(over/2) = 0 — identical to the short-circuit. No input separates >= from >. Correctness-preserving guard, verified by the £125,140 boundary test."
+  }
+]

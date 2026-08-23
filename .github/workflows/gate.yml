@@ -1,0 +1,30 @@
+name: gate
+on: [push, workflow_dispatch]
+jobs:
+  witness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+
+      - name: proof-of-play — the accounting engine against its hand-checked worked examples
+        run: node --test accounts.test.mjs
+
+      # ⚑ Pinned. An unpinned gate is a gate somebody else can change.
+      - name: witness — try to break the tax maths
+        run: |
+          git clone --depth 1 --branch v0.6 https://github.com/sjgant80-hub/witness.git /tmp/witness
+          node /tmp/witness/witness.mjs mutate accounts.mjs \
+            --timeout 60000 --cap 600 \
+            --baseline witness.baseline.json \
+            --test node --test accounts.test.mjs
+
+      - name: the shipped page still carries the gated kernel
+        run: |
+          cp index.html /tmp/shipped.html
+          node build-page.mjs
+          diff -q /tmp/shipped.html index.html || {
+            echo "::error::index.html has drifted from accounts.mjs — run node build-page.mjs and commit."
+            exit 1
+          }
