@@ -1461,33 +1461,18 @@ async function _vaultHasLegacyPlaintext(db){var stores=['transactions','invoices
 async function _vaultMigrate(db){var stores=['transactions','invoices','audit'];for(var i=0;i<stores.length;i++){var all=await _rawGetAll(db,stores[i]);for(var k=0;k<all.length;k++){var rec=all[k];if(vIsEnc(rec))continue;var id=rec.id;var env=await vaultEncrypt(rec);if(id!==undefined)env.id=id;await _rawPut(db,stores[i],env)}}var keys=await _rawGetAllKeys(db,'data');for(var j=0;j<keys.length;j++){var key=keys[j];if(VAULT_PLAINTEXT_KEYS[key])continue;var val=await _rawGet(db,'data',key);if(vIsEnc(val))continue;var e2=await vaultEncrypt(val);await _rawPut(db,'data',e2,key)}}
 
 async function ensureUnlocked(){
+  // ── PASSWORD GATE REMOVED ─────────────────────────────────────────────────────
+  // The master-seed unlock screen is off: the app opens straight to your books. Data
+  // still lives ONLY in this browser's IndexedDB (never a server, never the cloud) —
+  // it's just stored without the at-rest encryption, so there's no seed to set, forget,
+  // or type. VAULT.key stays null, so vPut/vGet pass values through as plaintext, and
+  // any records a previous version encrypted are read back transparently if a key was
+  // set in this session (none is now). To bring the lock back, restore the prompting
+  // body from git history. The crypto helpers below stay defined but unused.
   if(VAULT.key||VAULT.ready)return true;
-  if(VAULT.unlocking)return VAULT.unlocking;
-  VAULT.unlocking=(async function(){
-    if(!_subtle){VAULT.ready=true;console.warn('FallAccount: Web Crypto unavailable — data stored WITHOUT encryption.');return true;}
-    var db=await rawOpenDB();
-    var meta=await _rawGet(db,'data','__vault_meta__');
-    var hasLegacy=!meta&&await _vaultHasLegacyPlaintext(db);
-    var m=_vaultBuildModal(!meta,hasLegacy);
-    while(true){
-      var seed=await m.ask();
-      try{
-        if(!meta){
-          var salt=_rand(16);
-          VAULT.key=await _deriveKey(seed,salt,600000);
-          if(hasLegacy){m.working('Encrypting your existing data…');await _vaultMigrate(db);}
-          var check=await vaultEncrypt('konomium-ok');
-          await _rawPut(db,'data',{salt:_b64e(salt),iterations:600000,check:check},'__vault_meta__');
-        }else{
-          VAULT.key=await _deriveKey(seed,_b64d(meta.salt),meta.iterations||600000);
-          var ok=null;try{ok=await vaultDecrypt(meta.check)}catch(e){ok=null}
-          if(ok!=='konomium-ok'){VAULT.key=null;m.error('Wrong master seed — try again.');continue}
-        }
-        VAULT.ready=true;m.close();return true;
-      }catch(e){VAULT.key=null;m.error('Could not unlock: '+(e&&e.message||e))}
-    }
-  })();
-  return VAULT.unlocking;
+  if(!_subtle)console.warn('FallAccount: Web Crypto unavailable — data stored WITHOUT encryption.');
+  VAULT.ready=true;
+  return true;
 }
 function vaultLock(){VAULT.key=null;VAULT.ready=false;VAULT.unlocking=null;location.reload()}
 
