@@ -28,7 +28,7 @@ if (/<\/script/i.test(stripped)) {
 const block = `/*__KERNEL_START__*/
 (function(){
 ${stripped.trim()}
-window.FA_ACCOUNTS = { RATES_2025_26, validTxn, ledger, vatReturn, soleTraderTax, vatThresholdCheck };
+window.FA_ACCOUNTS = { RATES_2026_27, validTxn, ledger, vatReturn, soleTraderTax, vatThresholdCheck };
 })();
 /*__KERNEL_END__*/`;
 

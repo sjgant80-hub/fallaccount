@@ -14,7 +14,7 @@ The money a sole trader cannot afford to get wrong now runs through a **gated ke
 - **The personal-allowance taper** above £100,000 (reduced £1 per £2, gone at £125,140) — the old inline maths hard-coded the full £12,570 and told high earners they owed thousands too little. Fixed.
 - **Income tax** 20 / 40 / 45 on taxable income · **Class 4 NIC** 6 % / 2 % · **VAT return** (MTD boxes 1/4/5/6/7) · **VAT registration threshold** — every rule a falsifiable, hand-checked worked example.
 - **The gate:** `node --test accounts.test.mjs`, then witness mutation-testing (**48/50 mutants killed, 2 argued-equivalent**). CI diffs the inlined kernel against the source, so **the live tax maths cannot silently drift from the proven tax maths.**
-- **Honest wire:** it **estimates** on the 2025-26 rates as known at build. It is not a filing and not tax advice — confirm current thresholds with HMRC/gov.uk before you rely on a number or file a return.
+- **Honest wire:** it **estimates** on the 2026-27 rates as known at build (PA and bands are frozen to Apr 2028, so they match 2025-26). It is not a filing and not tax advice — confirm current thresholds with HMRC/gov.uk before you rely on a number or file a return.
 
 ---
 
@@ -24,7 +24,7 @@ A complete accounting autopilot for UK sole traders that runs entirely in your b
 
 - 📸 **Receipt scanning** — drop a photo, AI extracts vendor, amount, category, tax claimability
 - 📊 **Bank CSV categorisation** — paste statement rows, get them sorted and ready to import
-- 💷 **Tax calculator** — 2025-26 rates, NI Class 4, tapered personal allowance, all brackets (gated engine)
+- 💷 **Tax calculator** — 2026-27 rates, NI Class 4, tapered personal allowance, all brackets (gated engine)
 - 📋 **MTD quarterly reports** — Making Tax Digital compliant exports
 - 🧾 **Invoicing** — generate, send, track, status-cycle
 - 🤖 **Dual AI** — Claude API (most capable) OR local WebLLM (full privacy) OR offline guide

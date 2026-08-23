@@ -7,8 +7,9 @@
 // worse than none. Pure and total: garbage in returns { ok:false }, never a wrong number.
 //
 // HONEST WIRE (on the page too): this ESTIMATES. It is not a filing, not tax advice, and the
-// figures are the 2025-26 rates as known at build — confirm the current thresholds with HMRC or
-// an accountant before you rely on a number or file a return.
+// figures are the 2026-27 rates as known at build (PA and the bands are frozen to Apr 2028, so
+// they match 2025-26) — confirm the current thresholds with HMRC or an accountant before you
+// rely on a number or file a return.
 
 const isPence = (v) => Number.isInteger(v) && Number.isFinite(v);
 const str = (v) => typeof v === 'string' ? v : '';
@@ -20,9 +21,9 @@ const validDate = (s) => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) 
     return m >= 1 && m <= 12 && d >= 1 && d <= [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1]; })();
 
 // ── the rates: a DATED, RE-CITABLE config, not a buried constant. All money in PENCE. ──
-export const RATES_2025_26 = Object.freeze({
-  taxYear: '2025-26',
-  cite: 'UK sole-trader rates as known at build (2025-26). CONFIRM current thresholds with HMRC/gov.uk before relying on or filing.',
+export const RATES_2026_27 = Object.freeze({
+  taxYear: '2026-27',
+  cite: 'UK sole-trader rates as known at build (2026-27; PA and bands frozen to Apr 2028). CONFIRM current thresholds with HMRC/gov.uk before relying on or filing.',
   personalAllowancePence: 1257000,          // £12,570
   paTaperStartPence: 10000000,              // £100,000 — PA reduced £1 per £2 above
   paGoneAtPence: 12514000,                  // £125,140 — PA fully tapered
@@ -103,7 +104,7 @@ function taperedPA(incomePence, r) {
  * component so nothing is a black box. An ESTIMATE — the honest wire rides in the result.
  */
 export function soleTraderTax(profitPence, otherIncomePence, rates) {
-  const r = obj(rates) || RATES_2025_26;
+  const r = obj(rates) || RATES_2026_27;
   const profit = isPence(profitPence) && profitPence >= 0 ? profitPence : null;
   const other = otherIncomePence === undefined ? 0 : (isPence(otherIncomePence) && otherIncomePence >= 0 ? otherIncomePence : null);
   if (profit === null || other === null) return { ok: false, why: 'profit and other income must be non-negative integer pence' };
@@ -137,7 +138,7 @@ export function soleTraderTax(profitPence, otherIncomePence, rates) {
 
 /** Is the trader over the VAT registration threshold on rolling turnover? A yes/no with the gap. */
 export function vatThresholdCheck(turnoverPence, rates) {
-  const r = obj(rates) || RATES_2025_26;
+  const r = obj(rates) || RATES_2026_27;
   if (!isPence(turnoverPence) || turnoverPence < 0) return { ok: false, why: 'turnover must be non-negative integer pence' };
   const over = turnoverPence >= r.vatRegThresholdPence;
   return { ok: true, mustRegister: over, thresholdPence: r.vatRegThresholdPence,

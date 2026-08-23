@@ -1,7 +1,7 @@
 // fallaccount · accounts.test.mjs — the accounting engine, every rule falsifiable, money hand-checked.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { RATES_2025_26, validTxn, ledger, vatReturn, soleTraderTax, vatThresholdCheck } from './accounts.mjs';
+import { RATES_2026_27, validTxn, ledger, vatReturn, soleTraderTax, vatThresholdCheck } from './accounts.mjs';
 
 const income = (net, vat, category = 'sales', date = '2025-06-01') => ({ date, kind: 'income', category, netPence: net, ...(vat !== undefined ? { vatPence: vat } : {}) });
 const expense = (net, vat, category = 'materials', date = '2025-06-01') => ({ date, kind: 'expense', category, netPence: net, ...(vat !== undefined ? { vatPence: vat } : {}) });
@@ -85,11 +85,11 @@ test('THE VAT REGISTRATION THRESHOLD — over, under, and the exact boundary', (
 });
 
 test('THE RATES ARE A DATED, RE-CITABLE CONFIG — and the result carries the cite', () => {
-  assert.equal(RATES_2025_26.taxYear, '2025-26');
-  assert.match(RATES_2025_26.cite, /CONFIRM current thresholds/);
+  assert.equal(RATES_2026_27.taxYear, '2026-27');
+  assert.match(RATES_2026_27.cite, /CONFIRM current thresholds/);
   assert.match(soleTraderTax(3000000, 0).cite, /CONFIRM current thresholds/);
   // a caller can pass a different year's rates — the engine is not wedded to one year
-  const custom = { ...RATES_2025_26, personalAllowancePence: 1300000, taxYear: '2099-00' };
+  const custom = { ...RATES_2026_27, personalAllowancePence: 1300000, taxYear: '2099-00' };
   assert.equal(soleTraderTax(2000000, 0, custom).taxYear, '2099-00');
   assert.equal(soleTraderTax(2000000, 0, custom).personalAllowancePence, 1300000);
 });

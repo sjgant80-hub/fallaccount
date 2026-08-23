@@ -1226,8 +1226,9 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
 // worse than none. Pure and total: garbage in returns { ok:false }, never a wrong number.
 //
 // HONEST WIRE (on the page too): this ESTIMATES. It is not a filing, not tax advice, and the
-// figures are the 2025-26 rates as known at build — confirm the current thresholds with HMRC or
-// an accountant before you rely on a number or file a return.
+// figures are the 2026-27 rates as known at build (PA and the bands are frozen to Apr 2028, so
+// they match 2025-26) — confirm the current thresholds with HMRC or an accountant before you
+// rely on a number or file a return.
 
 const isPence = (v) => Number.isInteger(v) && Number.isFinite(v);
 const str = (v) => typeof v === 'string' ? v : '';
@@ -1239,9 +1240,9 @@ const validDate = (s) => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) 
     return m >= 1 && m <= 12 && d >= 1 && d <= [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1]; })();
 
 // ── the rates: a DATED, RE-CITABLE config, not a buried constant. All money in PENCE. ──
-const RATES_2025_26 = Object.freeze({
-  taxYear: '2025-26',
-  cite: 'UK sole-trader rates as known at build (2025-26). CONFIRM current thresholds with HMRC/gov.uk before relying on or filing.',
+const RATES_2026_27 = Object.freeze({
+  taxYear: '2026-27',
+  cite: 'UK sole-trader rates as known at build (2026-27; PA and bands frozen to Apr 2028). CONFIRM current thresholds with HMRC/gov.uk before relying on or filing.',
   personalAllowancePence: 1257000,          // £12,570
   paTaperStartPence: 10000000,              // £100,000 — PA reduced £1 per £2 above
   paGoneAtPence: 12514000,                  // £125,140 — PA fully tapered
@@ -1322,7 +1323,7 @@ function taperedPA(incomePence, r) {
  * component so nothing is a black box. An ESTIMATE — the honest wire rides in the result.
  */
 function soleTraderTax(profitPence, otherIncomePence, rates) {
-  const r = obj(rates) || RATES_2025_26;
+  const r = obj(rates) || RATES_2026_27;
   const profit = isPence(profitPence) && profitPence >= 0 ? profitPence : null;
   const other = otherIncomePence === undefined ? 0 : (isPence(otherIncomePence) && otherIncomePence >= 0 ? otherIncomePence : null);
   if (profit === null || other === null) return { ok: false, why: 'profit and other income must be non-negative integer pence' };
@@ -1356,14 +1357,14 @@ function soleTraderTax(profitPence, otherIncomePence, rates) {
 
 /** Is the trader over the VAT registration threshold on rolling turnover? A yes/no with the gap. */
 function vatThresholdCheck(turnoverPence, rates) {
-  const r = obj(rates) || RATES_2025_26;
+  const r = obj(rates) || RATES_2026_27;
   if (!isPence(turnoverPence) || turnoverPence < 0) return { ok: false, why: 'turnover must be non-negative integer pence' };
   const over = turnoverPence >= r.vatRegThresholdPence;
   return { ok: true, mustRegister: over, thresholdPence: r.vatRegThresholdPence,
     marginPence: r.vatRegThresholdPence - turnoverPence,
     why: over ? 'over the VAT registration threshold — you must register' : 'under the VAT registration threshold' };
 }
-window.FA_ACCOUNTS = { RATES_2025_26, validTxn, ledger, vatReturn, soleTraderTax, vatThresholdCheck };
+window.FA_ACCOUNTS = { RATES_2026_27, validTxn, ledger, vatReturn, soleTraderTax, vatThresholdCheck };
 })();
 /*__KERNEL_END__*/</script>
 
@@ -2215,7 +2216,18 @@ document.addEventListener('paste',function(e){
 });
 
 // ═══ BANK PARSER ═══
-function loadSample(){document.getElementById('bank-input').value='15/12/2026, ADOBE CREATIVE, -49.94\n14/12/2026, ACME LTD, 2400.00\n12/12/2026, TRAINLINE, -67.50\n11/12/2026, TESCO FUEL, -48.20\n10/12/2026, BAKER AND CO, 850.00\n08/12/2026, EE MOBILE, -35.00\n07/12/2026, AWS, -22.00\n05/12/2026, COSTA COFFEE, -4.60\n04/12/2026, PROF INDEMNITY INS, -180.00\n03/12/2026, STARTUPXYZ, 1200.00'}
+function loadSample(){
+  // Dates are generated relative to TODAY (one row per week going back) so the sample lands in the
+  // current tax-year quarter — otherwise the MTD page shows £0 for "now" and looks broken.
+  var today=new Date();
+  var rows=[['ACME LTD',2400.00],['ADOBE CREATIVE',-49.94],['TRAINLINE',-67.50],['BAKER AND CO',850.00],['TESCO FUEL',-48.20],['EE MOBILE',-35.00],['STARTUPXYZ',1200.00],['AWS',-22.00],['PROF INDEMNITY INS',-180.00],['COSTA COFFEE',-4.60]];
+  var lines=rows.map(function(r,i){
+    var d=new Date(today.getTime()); d.setDate(d.getDate()-(i*7+2));
+    var dd=('0'+d.getDate()).slice(-2),mm=('0'+(d.getMonth()+1)).slice(-2),yy=d.getFullYear();
+    return dd+'/'+mm+'/'+yy+', '+r[0]+', '+r[1].toFixed(2);
+  });
+  document.getElementById('bank-input').value=lines.join('\n');
+}
 
 async function parseBank(){
   var csv=document.getElementById('bank-input').value.trim();
@@ -2734,16 +2746,16 @@ function dlBlob(content,type,filename){var blob=new Blob([content],{type:type});
     if (!el) return;
     var t = KONOMI.tier;
     var c = t==='dead'?'#8a8a8a':t==='trial'?'#c2a060':'#3a9a72';
-    el.textContent = '◊ ' + t.toUpperCase();
+    el.textContent = '◊ ' + (t==='dead'?'FREE':t.toUpperCase());
     el.style.color = c;
-    el.title = 'Konomi tier: ' + t + (KONOMI.expires_at ? ' · expires ' + KONOMI.expires_at : '');
+    el.title = 'Konomi tier: ' + (t==='dead'?'free':t) + (KONOMI.expires_at ? ' · expires ' + KONOMI.expires_at : '');
   }
   function injectBadge(){
     if (document.getElementById('konomi-badge')) return;
     var el = document.createElement('div');
     el.id = 'konomi-badge';
     el.style.cssText = 'position:fixed;bottom:12px;left:12px;background:rgba(0,0,0,.65);color:#8a8a8a;padding:5px 10px;border-radius:6px;font-family:monospace;font-size:11px;cursor:pointer;z-index:9999;letter-spacing:.06em;border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(6px)';
-    el.textContent = '◊ DEAD';
+    el.textContent = '◊ FREE';
     el.onclick = function(){ showLicenceDialog(); };
     document.body.appendChild(el);
   }
