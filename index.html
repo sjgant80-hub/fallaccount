@@ -319,38 +319,45 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
 <!-- FALL_KIT_BEGIN v1 · DO NOT EDIT THIS BLOCK MANUALLY -->
 <script>
 /*!
- * Fall Kit · v1.0.0 · the shared cascade for every estate seed
- * MIT · Simon Gant · ai-nativesolutions.com · ◊·κ=1
+ * Fall Kit · v3.1.0 · the shared cascade for every estate seed (the brain stud of the estate's Lego socket)
+ * MIT · AI-Native Solutions · ai-nativesolutions.com
  *
  * Inlineable JS module. Drop into any seed via <script> or copy-paste inline.
- * Preserves single-HTML sovereignty (no external deps until user opts in to T2 WebLLM).
+ * Preserves single-HTML sovereignty (no external deps until user opts in to T2 WebLLM or T3 BYOK).
  *
  * What it gives every seed:
- *  - AI tier picker: T0 (off · default) · T2 (WebLLM in-browser, 5 models 1B-70B) · T3 (BYOK Anthropic/OpenAI/Google)
- *  - Universal entry: FallKit.aiComplete(systemPrompt, userMsg, maxTokens) → string|null
- *  - AI chip UI in header
- *  - WebRTC P2P mesh (ported from canonical fallnet · fall-signal channel · Google STUN)
+ *  - Tier picker: T0 (off · default) · T2 (WebLLM in-browser, 5 models 1B-70B) · T3 (BYOK)
+ *  - Universal text: FallKit.aiComplete(system, user, maxTokens) → string|null
+ *  - NEW · Universal image: FallKit.aiImage(prompt, opts) → { url } | null
+ *  - NEW · Universal video: FallKit.aiVideo(prompt, opts) → { url } | null
+ *  - NEW · Universal TTS:   FallKit.aiTTS(text, opts)     → { url | blob } | null
+ *  - NEW · Universal STT:   FallKit.aiSTT(blob, opts)     → { text } | null
+ *  - NEW in v3 · Conversation: FallKit.aiChat(system, history, user, maxTokens) → { text, assistant } | null
+ *    (the caller appends the user turn and `assistant` to its own history: a conversation only grows, never edited)
+ *  - NEW in v3 · Recycling: the system prompt is sent first and the same each call, marked for Anthropic's cache;
+ *    OpenAI, Google and OpenRouter cache repeated openings themselves. FallKit.lastUsage() says what the last call
+ *    read, how much of it the provider reused, and what it wrote.
+ *  - NEW in v3.1 · Ask about this page: the chip's panel answers questions from the page's own words through the brain
+ *    the person picked, so the chip is useful in any build: FallKit.askPage(question) → { text, why }
+ *  - AI chip UI in header · settings modal with tabs for each modality
+ *  - Same-device mesh (BroadcastChannel: estate seeds open on this device find each other; not cross-device)
  *  - Help section partial: FallKit.helpSection()
- *  - Settings panel: FallKit.openSettings()
+ *  - Settings panel:       FallKit.openSettings()
  *
- * Doctrine (per botler CLAUDE.md):
+ * Doctrine:
  *  - T0 fallback ALWAYS works · aiComplete returns null · caller MUST degrade gracefully
  *  - NEVER hide a feature behind AI · NEVER proxy API keys · NEVER log keys
+ *  - Keys are held in this tab only, unless the owner ticks "remember my keys on this device" (v3: every estate
+ *    page at this address shares one browser storage, so a key kept there can be read by any of them) · sent direct
+ *    to the provider · never proxied through us
  *  - WebLLM is lazy-loaded · model weights download ONLY on user opt-in
- *
- * Estate-first canonical references:
- *  - WebLLM pattern: Downloads/botler/index.html (T0/T2/T3 cascade)
- *  - WebRTC pattern: Downloads/fallnet/fallnet-shim.js (raw RTCPeerConnection)
- *  - Konomi seal:    ◊·κ=1  (consistent across all estate seeds)
- *  - Mesh channel:   'fall-signal'
  */
 (function (root) {
   'use strict';
 
-  const FALL_KIT_VERSION = '1.2.0';
-  const KCC_MINT_URL = 'https://sjgant80-hub.github.io/kcc-mint/';
+  const FALL_KIT_VERSION = '3.1.0';
 
-  // ─── Model registry ──────────────────────────────────────────────
+  // ─── WebLLM (T2) model registry ─────────────────────────────────────
   const WEBLLM_MODELS = {
     'llama-1b':  { id: 'Llama-3.2-1B-Instruct-q4f16_1-MLC',   size: '~700MB', label: '1B · fast · any laptop / phone' },
     'llama-3b':  { id: 'Llama-3.2-3B-Instruct-q4f16_1-MLC',   size: '~2GB',   label: '3B · balanced · default · most laptops' },
@@ -360,33 +367,138 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
   };
   const DEFAULT_MODEL = 'llama-3b';
 
-  const T3_PROVIDERS = {
-    anthropic: { label: 'Anthropic Claude', models: ['claude-sonnet-4-5','claude-opus-4-7','claude-haiku-4-5'], default: 'claude-sonnet-4-5', url: 'https://api.anthropic.com/v1/messages' },
-    openai:    { label: 'OpenAI',           models: ['gpt-4o','gpt-4o-mini','o1-mini'],                          default: 'gpt-4o-mini',      url: 'https://api.openai.com/v1/chat/completions' },
-    google:    { label: 'Google Gemini',    models: ['gemini-1.5-pro','gemini-1.5-flash','gemini-2.0-flash-exp'], default: 'gemini-1.5-flash', url: 'https://generativelanguage.googleapis.com/v1beta/models/' },
+  // ─── T3 · BYOK · TEXT providers ─────────────────────────────────────
+  const TEXT_PROVIDERS = {
+    anthropic:  { label: 'Anthropic Claude',   models: ['claude-opus-5-5','claude-sonnet-5-5','claude-haiku-5-5'],                default: 'claude-opus-5-5',     type: 'anthropic' },
+    openai:     { label: 'OpenAI',             models: ['gpt-4o','gpt-4o-mini','o1-mini','gpt-4.1'],                              default: 'gpt-4o-mini',         type: 'openai' },
+    google:     { label: 'Google Gemini',      models: ['gemini-2.5-pro','gemini-2.5-flash','gemini-2.0-flash'],                  default: 'gemini-2.5-flash',    type: 'google' },
+    groq:       { label: 'Groq (fast)',        models: ['llama-3.3-70b-versatile','llama-3.1-70b-versatile','mixtral-8x7b-32768'], default: 'llama-3.3-70b-versatile', type: 'openai_compat', url: 'https://api.groq.com/openai/v1/chat/completions' },
+    cerebras:   { label: 'Cerebras (fastest)', models: ['llama-3.3-70b','llama-3.1-70b','llama3.1-8b'],                            default: 'llama-3.3-70b',       type: 'openai_compat', url: 'https://api.cerebras.ai/v1/chat/completions' },
+    openrouter: { label: 'OpenRouter (any)',   models: ['anthropic/claude-3.5-sonnet','openai/gpt-4o','google/gemini-pro-1.5','meta-llama/llama-3.3-70b-instruct'], default: 'meta-llama/llama-3.3-70b-instruct', type: 'openai_compat', url: 'https://openrouter.ai/api/v1/chat/completions' },
+    deepseek:   { label: 'DeepSeek',           models: ['deepseek-chat','deepseek-reasoner'],                                     default: 'deepseek-chat',       type: 'openai_compat', url: 'https://api.deepseek.com/v1/chat/completions' },
+    mistral:    { label: 'Mistral',            models: ['mistral-large-latest','mistral-small-latest','open-mistral-nemo'],       default: 'mistral-small-latest',type: 'openai_compat', url: 'https://api.mistral.ai/v1/chat/completions' },
+    cohere:     { label: 'Cohere',             models: ['command-r-plus-08-2024','command-r-08-2024'],                            default: 'command-r-08-2024',   type: 'cohere' },
+    together:   { label: 'Together AI',        models: ['meta-llama/Llama-3.3-70B-Instruct-Turbo','Qwen/Qwen2.5-72B-Instruct-Turbo'], default: 'meta-llama/Llama-3.3-70B-Instruct-Turbo', type: 'openai_compat', url: 'https://api.together.xyz/v1/chat/completions' },
+    huggingface:{ label: 'HuggingFace Inf.',   models: ['meta-llama/Llama-3.3-70B-Instruct','Qwen/Qwen2.5-72B-Instruct'],          default: 'meta-llama/Llama-3.3-70B-Instruct', type: 'hf_inference' },
+    xai:        { label: 'xAI Grok',           models: ['grok-2-latest','grok-2-1212','grok-vision-beta'],                        default: 'grok-2-latest',       type: 'openai_compat', url: 'https://api.x.ai/v1/chat/completions' },
   };
 
-  // ─── State ───────────────────────────────────────────────────────
+  // ─── T3 · BYOK · IMAGE providers ────────────────────────────────────
+  const IMAGE_PROVIDERS = {
+    fal:         { label: 'fal.ai (Flux + more)', models: ['fal-ai/flux/schnell','fal-ai/flux-pro/v1.1-ultra','fal-ai/flux/dev','fal-ai/recraft-v3'], default: 'fal-ai/flux/schnell',    type: 'fal' },
+    huggingface: { label: 'HuggingFace Inf.',     models: ['black-forest-labs/FLUX.1-schnell','black-forest-labs/FLUX.1-dev','stabilityai/stable-diffusion-3.5-large'], default: 'black-forest-labs/FLUX.1-schnell', type: 'hf_image' },
+    replicate:   { label: 'Replicate',            models: ['black-forest-labs/flux-schnell','black-forest-labs/flux-1.1-pro-ultra','stability-ai/stable-diffusion-3.5-large'], default: 'black-forest-labs/flux-schnell', type: 'replicate' },
+    openai:      { label: 'OpenAI DALL-E',        models: ['dall-e-3','dall-e-2'],                                                                   default: 'dall-e-3',              type: 'openai_image' },
+    google:      { label: 'Google Imagen',        models: ['imagen-3.0-generate-002','imagen-3.0-fast-generate-001'],                                default: 'imagen-3.0-generate-002',type: 'google_image' },
+    ideogram:    { label: 'Ideogram',             models: ['V_2','V_2_TURBO','V_1'],                                                                 default: 'V_2',                   type: 'ideogram' },
+    leonardo:    { label: 'Leonardo AI',          models: ['b24e16ff-06e3-43eb-8d33-4416c2d75876','1e60896f-3c26-4296-8ecc-53e2afecc132'],           default: 'b24e16ff-06e3-43eb-8d33-4416c2d75876', type: 'leonardo' },
+    xai:         { label: 'xAI Aurora',           models: ['grok-2-image-1212'],                                                                    default: 'grok-2-image-1212',     type: 'openai_image_compat', url: 'https://api.x.ai/v1/images/generations' },
+  };
+
+  // ─── T3 · BYOK · VIDEO providers ────────────────────────────────────
+  const VIDEO_PROVIDERS = {
+    fal:      { label: 'fal.ai (Kling/LTX/Veo)', models: ['fal-ai/kling-video/v2/master/text-to-video','fal-ai/ltx-video','fal-ai/veo3'], default: 'fal-ai/ltx-video', type: 'fal' },
+    luma:     { label: 'Luma Dream Machine',      models: ['luma-1.5','ray-2'],                                          default: 'luma-1.5',       type: 'luma' },
+    runway:   { label: 'Runway Gen-3',            models: ['gen3a_turbo','gen3a'],                                       default: 'gen3a_turbo',    type: 'runway' },
+    pika:     { label: 'Pika 2',                  models: ['pika-2.0'],                                                  default: 'pika-2.0',       type: 'pika' },
+    kling:    { label: 'Kling (direct)',          models: ['kling-v2-master','kling-v1.6-pro'],                          default: 'kling-v2-master',type: 'kling' },
+  };
+
+  // ─── T3 · BYOK · TTS providers ──────────────────────────────────────
+  const TTS_PROVIDERS = {
+    elevenlabs: { label: 'ElevenLabs',    models: ['eleven_turbo_v2_5','eleven_multilingual_v2'], default: 'eleven_turbo_v2_5', type: 'elevenlabs' },
+    openai:     { label: 'OpenAI TTS',    models: ['tts-1','tts-1-hd'],                            default: 'tts-1',            type: 'openai_tts' },
+    playht:     { label: 'PlayHT',        models: ['PlayHT2.0-turbo','PlayHT2.0'],                 default: 'PlayHT2.0-turbo',  type: 'playht' },
+    cartesia:   { label: 'Cartesia Sonic',models: ['sonic-english','sonic-multilingual'],           default: 'sonic-english',    type: 'cartesia' },
+  };
+
+  // ─── T3 · BYOK · STT providers ──────────────────────────────────────
+  const STT_PROVIDERS = {
+    deepgram:   { label: 'Deepgram Nova',     models: ['nova-2','nova-3'],                default: 'nova-2',     type: 'deepgram' },
+    assemblyai: { label: 'AssemblyAI',        models: ['universal-1','best'],             default: 'universal-1',type: 'assemblyai' },
+    openai:     { label: 'OpenAI Whisper',    models: ['whisper-1'],                      default: 'whisper-1',  type: 'openai_stt' },
+  };
+
+  // ─── State ──────────────────────────────────────────────────────────
+  const MODALITIES = ['text', 'image', 'video', 'tts', 'stt'];
+  const emptyKeys = () => ({ text: {}, image: {}, video: {}, tts: {}, stt: {} });
+  /**
+   * What a stored config holds, split into what may be stored (the tier, providers, models) and what is held in this
+   * tab only (the keys). Keys stay stored only when the owner chose "remember my keys on this device"; a config written
+   * the old way (keys stored, no choice made) has its keys moved into the tab and stored no longer. Pure.
+   * → { config, secrets, moved } (moved: how many keys were taken out of storage)
+   */
+  function configFrom(c) {
+    c = c && typeof c === 'object' && !Array.isArray(c) ? Object.assign({}, c) : {};
+    if (c.api_key && !c.keys) {   // v1 → v2: one text key at the top level
+      c.keys = emptyKeys();
+      c.keys.text[c.api_provider || 'anthropic'] = { key: c.api_key, model: c.api_model };
+    }
+    delete c.api_key;
+    const secrets = emptyKeys(), models = emptyKeys();
+    let moved = 0;
+    for (const m of MODALITIES) {
+      const held = c.keys && c.keys[m] && typeof c.keys[m] === 'object' ? c.keys[m] : {};
+      for (const pk of Object.keys(held)) {
+        const e = held[pk] || {};
+        if (typeof e.key === 'string' && e.key) { secrets[m][pk] = e.key; moved++; }
+        if (typeof e.model === 'string' && e.model) models[m][pk] = e.model;
+      }
+      const kept = c.models && c.models[m] && typeof c.models[m] === 'object' ? c.models[m] : {};
+      for (const pk of Object.keys(kept)) if (typeof kept[pk] === 'string' && kept[pk]) models[m][pk] = models[m][pk] || kept[pk];
+    }
+    c.models = models;
+    const remember = c.remember_keys === true;
+    if (!remember) delete c.keys;
+    return { config: c, secrets: secrets, moved: remember ? 0 : moved };
+  }
+  /** what is written to storage: the config, with the keys only if the owner chose to remember them. Pure. */
+  function storedForm(config, secrets) {
+    const out = Object.assign({}, config);
+    delete out.keys;
+    if (config.remember_keys === true) {
+      out.keys = emptyKeys();
+      for (const m of MODALITIES) for (const pk of Object.keys(secrets[m] || {})) out.keys[m][pk] = { key: secrets[m][pk], model: (config.models && config.models[m] && config.models[m][pk]) || undefined };
+    }
+    return out;
+  }
+  const BOOT = (function () {
+    let stored = {};
+    try { stored = JSON.parse(localStorage.getItem('fall-kit.config') || '{}'); } catch (e) { stored = {}; }
+    return configFrom(stored);
+  })();
   const STATE = {
-    config: loadConfig(),
+    config: BOOT.config,
+    secrets: BOOT.secrets,   // the keys: this tab only, unless remember_keys
     ai: { ready: false, loading: false, progress: 0, engine: null, model: null },
     mesh: { active: false, peers: new Map(), bc: null, signal: null },
+    lastUsage: null,
+    ask: { opening: null, talk: [], last: null },   // the talk about this page: its opening, kept identical, and its turns
   };
 
-  function loadConfig() {
-    try { return JSON.parse(localStorage.getItem('fall-kit.config') || '{}'); }
-    catch (e) { return {}; }
+  function saveConfig() { try { localStorage.setItem('fall-kit.config', JSON.stringify(storedForm(STATE.config, STATE.secrets))); } catch (e) {} }
+  if (BOOT.moved) saveConfig();   // keys stored the old way leave shared storage now; they stay usable in this tab
+  function getKey(modality, providerKey) { return (STATE.secrets[modality] && STATE.secrets[modality][providerKey]) || ''; }
+  function getModel(modality, providerKey, registry) {
+    return (STATE.config.models && STATE.config.models[modality] && STATE.config.models[modality][providerKey]) || registry[providerKey]?.default;
   }
-  function saveConfig() {
-    try { localStorage.setItem('fall-kit.config', JSON.stringify(STATE.config)); } catch (e) {}
+  function setKey(modality, providerKey, key, model) {
+    STATE.secrets[modality] = STATE.secrets[modality] || {};
+    if (key) STATE.secrets[modality][providerKey] = key;
+    STATE.config.models = STATE.config.models || emptyKeys();
+    STATE.config.models[modality] = STATE.config.models[modality] || {};
+    if (model) STATE.config.models[modality][providerKey] = model;
+    saveConfig();
   }
+  function forgetKeys() { STATE.secrets = emptyKeys(); STATE.config.remember_keys = false; saveConfig(); renderAiChip(); }
 
-  // ─── DOM helpers ─────────────────────────────────────────────────
+  // ─── DOM helpers ────────────────────────────────────────────────────
   function $(s, root) { return (root || document).querySelector(s); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 
-  // ─── AI tier ─────────────────────────────────────────────────────
+  // ─── AI tier ────────────────────────────────────────────────────────
   function aiTier() { return STATE.config.ai_tier || 'T0'; }
+  function activeTextProvider() { return STATE.config.text_provider || 'anthropic'; }
 
   function renderAiChip() {
     const chip = $('#fk-ai-chip');
@@ -400,7 +512,8 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
       else if (STATE.ai.loading) { txt.textContent = 'T2 loading ' + Math.round(STATE.ai.progress) + '%'; chip.classList.add('fk-chip-loading'); }
       else { txt.textContent = 'T2 · click to load'; chip.classList.add('fk-chip-warn'); }
     } else if (tier === 'T3') {
-      if (STATE.config.api_key) { txt.textContent = 'T3 ' + (T3_PROVIDERS[STATE.config.api_provider]?.label || 'BYOK') + ' · active'; chip.classList.add('fk-chip-live'); }
+      const p = activeTextProvider();
+      if (getKey('text', p)) { txt.textContent = 'T3 ' + (TEXT_PROVIDERS[p]?.label.split(' ')[0] || 'BYOK') + ' · active'; chip.classList.add('fk-chip-live'); }
       else { txt.textContent = 'T3 · no key set'; chip.classList.add('fk-chip-warn'); }
     }
   }
@@ -418,12 +531,8 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
       const engine = await CreateMLCEngine(model.id, {
         initProgressCallback: p => { STATE.ai.progress = (p.progress || 0) * 100; renderAiChip(); }
       });
-      STATE.ai.engine = engine;
-      STATE.ai.model = model.id;
-      STATE.ai.ready = true;
-      STATE.ai.loading = false;
-      STATE.config.webllm_model = key; saveConfig();
-      renderAiChip();
+      STATE.ai.engine = engine; STATE.ai.model = model.id; STATE.ai.ready = true; STATE.ai.loading = false;
+      STATE.config.webllm_model = key; saveConfig(); renderAiChip();
       notify('WebLLM ready · sovereign mode · ' + model.label.split(' · ')[0], 'ok');
     } catch (e) {
       console.error('fall-kit: WebLLM load failed', e);
@@ -432,62 +541,385 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
     }
   }
 
+  // ═══════════════════════ TEXT · aiComplete · aiChat ═══════════════
+  // One way to ask every text provider: the system prompt first and the same each call (so a provider can reuse its
+  // reading of it), then the conversation, which only ever grows. Pure pieces (requestOf, textOf, usageOf) are exposed
+  // on FallKit for tests; nothing pure here touches the network.
+  const isObj = (x) => x !== null && typeof x === 'object' && !Array.isArray(x);
+  const count = (x) => (Number.isInteger(x) && x >= 0 ? x : 0);
+  /** Claude models from 5.x think before they answer: room for that, and a light effort for an assistant's reply */
+  const THINKS = (model) => /^claude-(?:opus|sonnet|haiku|fable|mythos)-5/.test(model);
+  /** Claude models with a server-side fallback when a request is declined (Haiku has none) */
+  const FALLS_BACK = (model) => /^claude-(?:opus|sonnet|fable)-5/.test(model);
+  /** a message's words, whatever shape a provider keeps it in */
+  function wordsOf(m) {
+    if (!isObj(m)) return '';
+    if (typeof m.content === 'string') return m.content;
+    if (Array.isArray(m.content)) return m.content.filter((b) => isObj(b) && b.type === 'text' && typeof b.text === 'string').map((b) => b.text).join('\n');
+    return '';
+  }
+  /**
+   * The request a text provider is sent: { url, headers, body } for type (anthropic | openai | google | openai_compat |
+   * cohere | hf_inference). messages: [{ role: 'user' | 'assistant', content }]. Pure: the key is placed, never kept.
+   */
+  function requestOf(type, opts) {
+    const { model, key, system, messages, maxTokens, url } = opts;
+    const max = Number.isInteger(maxTokens) && maxTokens > 0 ? maxTokens : 600;
+    const plain = messages.map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: wordsOf(m) }));
+    if (type === 'anthropic') {
+      const headers = { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' };
+      const body = { model, max_tokens: THINKS(model) ? Math.max(max * 4, 4000) : max, system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
+        messages: messages.map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content })) };
+      if (THINKS(model)) body.output_config = { effort: 'low' };
+      if (FALLS_BACK(model)) { headers['anthropic-beta'] = 'server-side-fallback-2026-07-01'; body.fallbacks = 'default'; }
+      return { url: 'https://api.anthropic.com/v1/messages', headers, body };
+    }
+    if (type === 'openai') return { url: 'https://api.openai.com/v1/chat/completions', headers: { 'content-type': 'application/json', Authorization: 'Bearer ' + key }, body: { model, max_completion_tokens: max, messages: [{ role: 'system', content: system }].concat(plain) } };
+    if (type === 'google') return { url: 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent', headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
+      body: { systemInstruction: { parts: [{ text: system }] }, contents: plain.map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })), generationConfig: { maxOutputTokens: max } } };
+    if (type === 'cohere') return { url: 'https://api.cohere.com/v2/chat', headers: { 'content-type': 'application/json', Authorization: 'Bearer ' + key }, body: { model, max_tokens: max, messages: [{ role: 'system', content: system }].concat(plain) } };
+    if (type === 'hf_inference') return { url: 'https://api-inference.huggingface.co/models/' + model + '/v1/chat/completions', headers: { 'content-type': 'application/json', Authorization: 'Bearer ' + key }, body: { model, max_tokens: max, messages: [{ role: 'system', content: system }].concat(plain) } };
+    if (type === 'openai_compat') return { url: url, headers: { 'content-type': 'application/json', Authorization: 'Bearer ' + key }, body: { model, max_tokens: max, messages: [{ role: 'system', content: system }].concat(plain) } };
+    return null;
+  }
+  /** the answer's words from a provider's reply, or null when it declined or said nothing. Pure. */
+  function textOf(type, j) {
+    if (!isObj(j)) return null;
+    let t = '';
+    if (type === 'anthropic') { if (j.stop_reason === 'refusal' || !Array.isArray(j.content)) return null; t = wordsOf({ content: j.content }); }
+    else if (type === 'google') { const c = Array.isArray(j.candidates) ? j.candidates[0] : null; t = c && isObj(c.content) && Array.isArray(c.content.parts) ? c.content.parts.map((p) => (isObj(p) && typeof p.text === 'string' ? p.text : '')).join('') : ''; }
+    else if (type === 'cohere') { t = isObj(j.message) && Array.isArray(j.message.content) ? wordsOf({ content: j.message.content.map((b) => Object.assign({ type: 'text' }, b)) }) : ''; }
+    else { const c = Array.isArray(j.choices) ? j.choices[0] : null; t = c && isObj(c.message) && typeof c.message.content === 'string' ? c.message.content : ''; }
+    t = t.trim();
+    return t ? t : null;
+  }
+  /** what a call used, read from a provider's own usage record: { read, recycled, written, out }. Pure. */
+  function usageOf(type, j) {
+    const u = isObj(j) ? (type === 'google' ? j.usageMetadata : type === 'cohere' && isObj(j.usage) ? j.usage.tokens : j.usage) : null;
+    if (!isObj(u)) return { read: 0, recycled: 0, written: 0, out: 0 };
+    if (type === 'anthropic') { const recycled = count(u.cache_read_input_tokens), written = count(u.cache_creation_input_tokens); return { read: count(u.input_tokens) + recycled + written, recycled, written, out: count(u.output_tokens) }; }
+    if (type === 'google') { const read = count(u.promptTokenCount); return { read, recycled: Math.min(read, count(u.cachedContentTokenCount)), written: 0, out: count(u.candidatesTokenCount) + count(u.thoughtsTokenCount) }; }
+    if (type === 'cohere') return { read: count(u.input_tokens), recycled: 0, written: 0, out: count(u.output_tokens) };
+    const read = count(u.prompt_tokens), d = isObj(u.prompt_tokens_details) ? u.prompt_tokens_details : {};
+    return { read, recycled: Math.min(read, count(d.cached_tokens)), written: 0, out: count(u.completion_tokens) };
+  }
+
   async function aiComplete(systemPrompt, userMsg, maxTokens) {
+    const r = await aiChat(systemPrompt, [], userMsg, maxTokens);
+    return r ? r.text : null;
+  }
+  /**
+   * One turn of a conversation: the system prompt, the history so far (unchanged), and the user's words. → { text,
+   * assistant } — the caller appends { role: 'user', content: userMsg } and `assistant` to its history (assistant is the
+   * reply as the provider gave it, so a provider that checks its own earlier turns sees them unchanged) — or null when no
+   * tier can answer.
+   */
+  async function aiChat(systemPrompt, history, userMsg, maxTokens) {
     maxTokens = maxTokens || 600;
+    const messages = (Array.isArray(history) ? history : []).concat([{ role: 'user', content: String(userMsg == null ? '' : userMsg) }]);
     const tier = aiTier();
     if (tier === 'T2' && STATE.ai.ready && STATE.ai.engine) {
       const r = await STATE.ai.engine.chat.completions.create({
-        messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userMsg }],
-        max_tokens: maxTokens,
+        messages: [{ role: 'system', content: systemPrompt }].concat(messages.map((m) => ({ role: m.role, content: wordsOf(m) }))), max_tokens: maxTokens,
       });
-      return r.choices[0].message.content;
+      const text = r.choices[0].message.content;
+      STATE.lastUsage = Object.assign({ provider: 'webllm' }, usageOf('openai', r));
+      return { text: text, assistant: { role: 'assistant', content: text } };
     }
-    if (tier === 'T3' && STATE.config.api_key && STATE.config.api_provider) {
-      return await aiCloudCall(systemPrompt, userMsg, maxTokens);
+    if (tier === 'T3') {
+      const p = activeTextProvider(); const key = getKey('text', p);
+      if (!key) return null;
+      return await textCall(p, systemPrompt, messages, maxTokens);
     }
     return null;
   }
 
-  async function aiCloudCall(sys, msg, maxTokens) {
-    const provider = STATE.config.api_provider;
-    const key = STATE.config.api_key;
-    const model = STATE.config.api_model || T3_PROVIDERS[provider]?.default;
-    if (provider === 'anthropic') {
-      const r = await fetch(T3_PROVIDERS.anthropic.url, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
-        body: JSON.stringify({ model, max_tokens: maxTokens, system: sys, messages: [{ role: 'user', content: msg }] }),
-      });
-      if (!r.ok) throw new Error('Anthropic ' + r.status + ': ' + (await r.text()).slice(0, 200));
-      const j = await r.json();
-      return j.content[0].text;
+  async function textCall(providerKey, sys, messages, maxTokens) {
+    const p = TEXT_PROVIDERS[providerKey];
+    const model = getModel('text', providerKey, TEXT_PROVIDERS);
+    const req = requestOf(p.type, { model, key: getKey('text', providerKey), system: sys, messages, maxTokens, url: p.url });
+    if (!req) throw new Error('unknown text provider type: ' + p.type);
+    const r = await fetch(req.url, { method: 'POST', headers: req.headers, body: JSON.stringify(req.body) });
+    if (!r.ok) throw new Error(p.label + ' ' + r.status);
+    const j = await r.json();
+    STATE.lastUsage = Object.assign({ provider: providerKey, model: model }, usageOf(p.type, j));
+    const text = textOf(p.type, j);
+    if (text === null) return null;
+    return { text: text, assistant: p.type === 'anthropic' ? { role: 'assistant', content: j.content } : { role: 'assistant', content: text } };
+  }
+
+  // ═══════════════════════ ASK · about this page ═════════════════════
+  // The kit's own use of the brain, so the chip is useful in any build, wired or not: a question about the page, answered
+  // from the page's own words. The opening is read once per talk and sent byte-identical every question, so a provider
+  // that caches recycles it; a talk starts afresh after MAX_ASKS questions or when the person starts again.
+  const PAGE_MAX = 12000, MAX_ASKS = 20;
+  const ASK_OPENING = 'You are the helper inside a web page. Answer questions about this page and how to use it, briefly and in plain words. Use only what the page says below; when it does not say, say so.';
+  /** the opening for questions about a page: who the helper is, then the page's title, description and text. Pure. */
+  function pageOpening(page) {
+    const p = isObj(page) ? page : {};
+    const line = (s, n) => (typeof s === 'string' ? s : '').replace(/\s+/g, ' ').trim().slice(0, n);
+    const text = (typeof p.text === 'string' ? p.text : '').replace(/[ \t\r\f\v]+/g, ' ').replace(/ *\n[\s]*/g, '\n').trim().slice(0, PAGE_MAX);
+    const about = line(p.description, 400);
+    return ASK_OPENING + '\n\nPAGE: ' + (line(p.title, 200) || '(no title)') + '\n' + (about ? 'ABOUT: ' + about + '\n' : '') + 'TEXT:\n' + text;
+  }
+  function readPage() {   // the page as its reader has it, without the kit's own chip, panel and code
+    const d = document.querySelector('meta[name="description"]');
+    const body = document.body ? document.body.cloneNode(true) : null;
+    if (body) {
+      body.querySelectorAll('#fk-modal-bg, #fk-ai-chip, #fk-toast, script, style, noscript, template').forEach((e) => e.remove());
+      body.querySelectorAll('td, th').forEach((e) => e.append(' | '));   // keep cells and blocks apart, as a reader sees them
+      body.querySelectorAll('p, div, li, tr, h1, h2, h3, h4, h5, h6, br, pre, dt, dd, figcaption, blockquote, section, article, header, footer, nav, label, button, option').forEach((e) => e.append('\n'));
     }
-    if (provider === 'openai') {
-      const r = await fetch(T3_PROVIDERS.openai.url, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', 'Authorization': 'Bearer ' + key },
-        body: JSON.stringify({ model, max_tokens: maxTokens, messages: [{ role: 'system', content: sys }, { role: 'user', content: msg }] }),
+    return { title: document.title, description: d ? d.getAttribute('content') : '', text: body ? body.textContent : '' };
+  }
+  async function askPage(question) {
+    const q = String(question == null ? '' : question).trim();
+    if (!q) return { text: null, why: 'Type a question first.' };
+    if (aiTier() === 'T0') return { text: null, why: 'AI is off. Pick T2 (a model in your browser) or T3 (your own key) below, press Save, then ask.' };
+    const t = STATE.ask;
+    if (!t.opening || t.talk.length >= MAX_ASKS * 2) { t.opening = pageOpening(readPage()); t.talk = []; }
+    const r = await aiChat(t.opening, t.talk, q, 600);
+    if (!r) return { text: null, why: aiTier() === 'T2' ? 'The in-browser model is not loaded yet: press Load model below.' : 'No key is set for this provider: add one below and press Save.' };
+    t.talk.push({ role: 'user', content: q }, r.assistant);
+    t.last = r.text;
+    return { text: r.text, why: null };
+  }
+
+  // ═══════════════════════ IMAGE · aiImage ═══════════════════════════
+  async function aiImage(prompt, opts) {
+    opts = opts || {};
+    const providerKey = opts.provider || STATE.config.image_provider || 'fal';
+    const p = IMAGE_PROVIDERS[providerKey];
+    const key = getKey('image', providerKey);
+    if (!key) return null;
+    const model = opts.model || getModel('image', providerKey, IMAGE_PROVIDERS);
+
+    if (p.type === 'fal') {
+      const r = await fetch('https://fal.run/' + model, {
+        method: 'POST', headers: { 'content-type': 'application/json', 'Authorization': 'Key ' + key },
+        body: JSON.stringify({ prompt, image_size: opts.size || 'landscape_4_3', num_inference_steps: opts.steps || 4 }),
+      });
+      if (!r.ok) throw new Error('fal ' + r.status);
+      const j = await r.json();
+      return { url: j.images?.[0]?.url || j.image?.url, raw: j };
+    }
+    if (p.type === 'hf_image') {
+      const r = await fetch('https://api-inference.huggingface.co/models/' + model, {
+        method: 'POST', headers: { 'content-type': 'application/json', 'Authorization': 'Bearer ' + key },
+        body: JSON.stringify({ inputs: prompt }),
+      });
+      if (!r.ok) throw new Error('HF ' + r.status);
+      const blob = await r.blob();
+      return { url: URL.createObjectURL(blob), blob };
+    }
+    if (p.type === 'replicate') {
+      const r = await fetch('https://api.replicate.com/v1/predictions', {
+        method: 'POST', headers: { 'content-type': 'application/json', 'Authorization': 'Token ' + key, 'Prefer': 'wait' },
+        body: JSON.stringify({ version: model, input: { prompt, num_outputs: 1 } }),
+      });
+      if (!r.ok) throw new Error('Replicate ' + r.status);
+      const j = await r.json();
+      return { url: Array.isArray(j.output) ? j.output[0] : j.output, raw: j };
+    }
+    if (p.type === 'openai_image') {
+      const r = await fetch('https://api.openai.com/v1/images/generations', {
+        method: 'POST', headers: { 'content-type': 'application/json', 'Authorization': 'Bearer ' + key },
+        body: JSON.stringify({ model, prompt, n: 1, size: opts.size || '1024x1024' }),
       });
       if (!r.ok) throw new Error('OpenAI ' + r.status);
       const j = await r.json();
-      return j.choices[0].message.content;
+      return { url: j.data[0].url, raw: j };
     }
-    if (provider === 'google') {
-      const r = await fetch(T3_PROVIDERS.google.url + model + ':generateContent?key=' + encodeURIComponent(key), {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: sys + '\n\n---\n\n' + msg }] }], generationConfig: { maxOutputTokens: maxTokens } }),
+    if (p.type === 'openai_image_compat') {
+      const r = await fetch(p.url, {
+        method: 'POST', headers: { 'content-type': 'application/json', 'Authorization': 'Bearer ' + key },
+        body: JSON.stringify({ model, prompt, n: 1 }),
       });
-      if (!r.ok) throw new Error('Google ' + r.status);
+      if (!r.ok) throw new Error(p.label + ' ' + r.status);
       const j = await r.json();
-      return j.candidates[0].content.parts[0].text;
+      return { url: j.data[0].url, raw: j };
     }
-    throw new Error('unknown provider: ' + provider);
+    if (p.type === 'google_image') {
+      const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':predict?key=' + encodeURIComponent(key), {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ instances: [{ prompt }], parameters: { sampleCount: 1 } }),
+      });
+      if (!r.ok) throw new Error('Google Imagen ' + r.status);
+      const j = await r.json();
+      return { url: 'data:image/png;base64,' + j.predictions[0].bytesBase64Encoded, raw: j };
+    }
+    if (p.type === 'ideogram') {
+      const r = await fetch('https://api.ideogram.ai/generate', {
+        method: 'POST', headers: { 'content-type': 'application/json', 'Api-Key': key },
+        body: JSON.stringify({ image_request: { prompt, model, aspect_ratio: opts.size || 'ASPECT_16_9' } }),
+      });
+      if (!r.ok) throw new Error('Ideogram ' + r.status);
+      const j = await r.json();
+      return { url: j.data[0].url, raw: j };
+    }
+    if (p.type === 'leonardo') {
+      const r = await fetch('https://cloud.leonardo.ai/api/rest/v1/generations', {
+        method: 'POST', headers: { 'content-type': 'application/json', 'Authorization': 'Bearer ' + key },
+        body: JSON.stringify({ prompt, modelId: model, num_images: 1, width: 1024, height: 576 }),
+      });
+      if (!r.ok) throw new Error('Leonardo ' + r.status);
+      const j = await r.json();
+      return { id: j.sdGenerationJob.generationId, raw: j, note: 'poll /generations/:id for URL' };
+    }
+    throw new Error('unknown image provider type: ' + p.type);
   }
 
-  // ─── WebRTC P2P mesh (ported from canonical fallnet · fall-signal channel · Google STUN) ───
+  // ═══════════════════════ VIDEO · aiVideo ═══════════════════════════
+  async function aiVideo(prompt, opts) {
+    opts = opts || {};
+    const providerKey = opts.provider || STATE.config.video_provider || 'fal';
+    const p = VIDEO_PROVIDERS[providerKey];
+    const key = getKey('video', providerKey);
+    if (!key) return null;
+    const model = opts.model || getModel('video', providerKey, VIDEO_PROVIDERS);
+
+    if (p.type === 'fal') {
+      const r = await fetch('https://fal.run/' + model, {
+        method: 'POST', headers: { 'content-type': 'application/json', 'Authorization': 'Key ' + key },
+        body: JSON.stringify({ prompt, duration: opts.duration || '5s', aspect_ratio: opts.aspect || '16:9' }),
+      });
+      if (!r.ok) throw new Error('fal ' + r.status);
+      const j = await r.json();
+      return { url: j.video?.url || j.output?.url, raw: j };
+    }
+    if (p.type === 'luma') {
+      const r = await fetch('https://api.lumalabs.ai/dream-machine/v1/generations', {
+        method: 'POST', headers: { 'content-type': 'application/json', 'Authorization': 'Bearer ' + key },
+        body: JSON.stringify({ prompt, model, aspect_ratio: opts.aspect || '16:9' }),
+      });
+      if (!r.ok) throw new Error('Luma ' + r.status);
+      const j = await r.json();
+      return { id: j.id, raw: j, note: 'poll /generations/:id for URL' };
+    }
+    if (p.type === 'runway') {
+      const r = await fetch('https://api.dev.runwayml.com/v1/image_to_video', {
+        method: 'POST', headers: { 'content-type': 'application/json', 'Authorization': 'Bearer ' + key, 'X-Runway-Version': '2024-11-06' },
+        body: JSON.stringify({ model, promptText: prompt, duration: opts.duration || 5, ratio: opts.aspect || '1280:768' }),
+      });
+      if (!r.ok) throw new Error('Runway ' + r.status);
+      const j = await r.json();
+      return { id: j.id, raw: j, note: 'poll for URL' };
+    }
+    if (p.type === 'pika') {
+      const r = await fetch('https://api.pika.art/generate/2.0', {
+        method: 'POST', headers: { 'content-type': 'application/json', 'Authorization': 'Bearer ' + key },
+        body: JSON.stringify({ prompt }),
+      });
+      if (!r.ok) throw new Error('Pika ' + r.status);
+      const j = await r.json();
+      return { id: j.id, raw: j, note: 'poll for URL' };
+    }
+    if (p.type === 'kling') {
+      const r = await fetch('https://api.klingai.com/v1/videos/text2video', {
+        method: 'POST', headers: { 'content-type': 'application/json', 'Authorization': 'Bearer ' + key },
+        body: JSON.stringify({ model, prompt }),
+      });
+      if (!r.ok) throw new Error('Kling ' + r.status);
+      const j = await r.json();
+      return { id: j.data.task_id, raw: j, note: 'poll for URL' };
+    }
+    throw new Error('unknown video provider type: ' + p.type);
+  }
+
+  // ═══════════════════════ TTS · aiTTS ═══════════════════════════════
+  async function aiTTS(text, opts) {
+    opts = opts || {};
+    const providerKey = opts.provider || STATE.config.tts_provider || 'elevenlabs';
+    const p = TTS_PROVIDERS[providerKey];
+    const key = getKey('tts', providerKey);
+    if (!key) return null;
+    const model = opts.model || getModel('tts', providerKey, TTS_PROVIDERS);
+
+    if (p.type === 'elevenlabs') {
+      const voice = opts.voice || '21m00Tcm4TlvDq8ikWAM';
+      const r = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + voice, {
+        method: 'POST', headers: { 'xi-api-key': key, 'content-type': 'application/json' },
+        body: JSON.stringify({ text, model_id: model }),
+      });
+      if (!r.ok) throw new Error('ElevenLabs ' + r.status);
+      const blob = await r.blob();
+      return { url: URL.createObjectURL(blob), blob };
+    }
+    if (p.type === 'openai_tts') {
+      const r = await fetch('https://api.openai.com/v1/audio/speech', {
+        method: 'POST', headers: { 'content-type': 'application/json', 'Authorization': 'Bearer ' + key },
+        body: JSON.stringify({ model, input: text, voice: opts.voice || 'alloy' }),
+      });
+      if (!r.ok) throw new Error('OpenAI TTS ' + r.status);
+      const blob = await r.blob();
+      return { url: URL.createObjectURL(blob), blob };
+    }
+    if (p.type === 'cartesia') {
+      const r = await fetch('https://api.cartesia.ai/tts/bytes', {
+        method: 'POST', headers: { 'content-type': 'application/json', 'X-API-Key': key, 'Cartesia-Version': '2024-11-13' },
+        body: JSON.stringify({ model_id: model, transcript: text, voice: { mode: 'id', id: opts.voice || 'a0e99841-438c-4a64-b679-ae501e7d6091' }, output_format: { container: 'mp3', encoding: 'mp3', sample_rate: 44100 } }),
+      });
+      if (!r.ok) throw new Error('Cartesia ' + r.status);
+      const blob = await r.blob();
+      return { url: URL.createObjectURL(blob), blob };
+    }
+    if (p.type === 'playht') {
+      const r = await fetch('https://api.play.ht/api/v2/tts/stream', {
+        method: 'POST', headers: { 'content-type': 'application/json', 'Authorization': 'Bearer ' + key, 'X-USER-ID': opts.userId || '' },
+        body: JSON.stringify({ text, voice: opts.voice || 's3://voice-cloning-zero-shot/d9ff78ba-d016-47f6-b0ef-dd630f59414e/female-cs/manifest.json', voice_engine: model }),
+      });
+      if (!r.ok) throw new Error('PlayHT ' + r.status);
+      const blob = await r.blob();
+      return { url: URL.createObjectURL(blob), blob };
+    }
+    throw new Error('unknown TTS provider type: ' + p.type);
+  }
+
+  // ═══════════════════════ STT · aiSTT ═══════════════════════════════
+  async function aiSTT(blob, opts) {
+    opts = opts || {};
+    const providerKey = opts.provider || STATE.config.stt_provider || 'deepgram';
+    const p = STT_PROVIDERS[providerKey];
+    const key = getKey('stt', providerKey);
+    if (!key) return null;
+    const model = opts.model || getModel('stt', providerKey, STT_PROVIDERS);
+
+    if (p.type === 'deepgram') {
+      const r = await fetch('https://api.deepgram.com/v1/listen?model=' + model + '&smart_format=true', {
+        method: 'POST', headers: { 'Authorization': 'Token ' + key, 'content-type': blob.type || 'audio/wav' },
+        body: blob,
+      });
+      if (!r.ok) throw new Error('Deepgram ' + r.status);
+      const j = await r.json();
+      return { text: j.results?.channels?.[0]?.alternatives?.[0]?.transcript, raw: j };
+    }
+    if (p.type === 'assemblyai') {
+      const up = await fetch('https://api.assemblyai.com/v2/upload', { method: 'POST', headers: { 'Authorization': key }, body: blob });
+      const upJ = await up.json();
+      const r = await fetch('https://api.assemblyai.com/v2/transcript', {
+        method: 'POST', headers: { 'content-type': 'application/json', 'Authorization': key },
+        body: JSON.stringify({ audio_url: upJ.upload_url, speech_model: model }),
+      });
+      if (!r.ok) throw new Error('AssemblyAI ' + r.status);
+      const j = await r.json();
+      return { id: j.id, raw: j, note: 'poll for text' };
+    }
+    if (p.type === 'openai_stt') {
+      const fd = new FormData();
+      fd.append('file', blob, 'audio.wav');
+      fd.append('model', model);
+      const r = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method: 'POST', headers: { 'Authorization': 'Bearer ' + key }, body: fd,
+      });
+      if (!r.ok) throw new Error('OpenAI Whisper ' + r.status);
+      const j = await r.json();
+      return { text: j.text, raw: j };
+    }
+    throw new Error('unknown STT provider type: ' + p.type);
+  }
+
+  // ─── WebRTC P2P mesh ────────────────────────────────────────────────
   const MESH_CHANNEL = 'fall-signal';
-  const STUN_SERVERS = [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }];
   function meshStart(opts) {
     if (STATE.mesh.active) return;
     opts = opts || {};
@@ -510,7 +942,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
     return true;
   }
 
-  // ─── Toast ───────────────────────────────────────────────────────
+  // ─── Toast ──────────────────────────────────────────────────────────
   function notify(msg, kind) {
     let t = $('#fk-toast');
     if (!t) {
@@ -527,8 +959,16 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
     t._to = setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(-50%) translateY(20px)'; }, 2400);
   }
 
-  // ─── Settings modal ──────────────────────────────────────────────
-  function openSettings() {
+  // ─── Settings modal · tabs for text/image/video/audio ───────────────
+  function providerOptions(registry, currentKey) {
+    return Object.entries(registry).map(([k, p]) => `<option value="${k}"${currentKey===k?' selected':''}>${esc(p.label)}</option>`).join('');
+  }
+  function modelOptions(registry, providerKey, currentModel) {
+    const p = registry[providerKey]; if (!p) return '';
+    return p.models.map(m => `<option value="${m}"${currentModel===m?' selected':''}>${esc(m)}</option>`).join('');
+  }
+
+  function openSettings(startTab) {
     let bg = $('#fk-modal-bg');
     if (!bg) {
       bg = document.createElement('div'); bg.id = 'fk-modal-bg';
@@ -537,106 +977,174 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
       document.body.appendChild(bg);
     }
     const tier = aiTier();
-    const provider = STATE.config.api_provider || 'anthropic';
-    const providerCfg = T3_PROVIDERS[provider];
+    const tab = startTab || STATE._lastTab || 'text';
+    STATE._lastTab = tab;
+    const textP = activeTextProvider();
+    const imgP = STATE.config.image_provider || 'fal';
+    const vidP = STATE.config.video_provider || 'fal';
+    const ttsP = STATE.config.tts_provider || 'elevenlabs';
+    const sttP = STATE.config.stt_provider || 'deepgram';
+
+    const styleInput = 'width:100%;padding:8px 11px;background:#22212c;border:1px solid #3a342c;color:#ebe3d2;border-radius:3px;font-size:13px;font-family:inherit;margin-bottom:10px';
+    const styleLabel = 'display:block;font-size:11px;color:#a89e88;letter-spacing:.04em;margin-bottom:6px;text-transform:uppercase';
+
+    function modalityBlock(modality, registry, currentProvider, currentKeyVal, currentModel) {
+      const p = registry[currentProvider];
+      return `
+        <label style="${styleLabel}">Provider</label>
+        <select id="fk-${modality}-provider" style="${styleInput}">${providerOptions(registry, currentProvider)}</select>
+        <label style="${styleLabel}">Model</label>
+        <select id="fk-${modality}-model" style="${styleInput}">${modelOptions(registry, currentProvider, currentModel)}</select>
+        <label style="${styleLabel}">API key</label>
+        <input type="password" id="fk-${modality}-key" value="${esc(currentKeyVal)}" placeholder="${currentKeyVal ? '(set · leave to keep)' : 'paste key here'}" autocomplete="off" style="${styleInput};font-family:ui-monospace,Menlo,monospace">
+        <div style="font-size:11px;color:#6e6a5e;line-height:1.55;margin-top:2px">Key held in this tab only (unless you tick “remember” below). Sent direct to the provider — never proxied through us.</div>
+      `;
+    }
+
     bg.innerHTML = `
-      <div style="background:#13121a;border:1px solid #c08a3a;border-radius:5px;max-width:600px;width:100%;padding:22px 24px;color:#ebe3d2;font-family:system-ui,-apple-system,sans-serif;font-size:13.5px;line-height:1.55">
-        <h3 style="font-family:Georgia,serif;font-size:18px;color:#c08a3a;margin-bottom:14px">◊ Fall Kit · AI cascade settings</h3>
-        <div style="margin-bottom:14px"><label style="display:block;font-size:11px;color:#a89e88;letter-spacing:.04em;margin-bottom:6px;text-transform:uppercase">Tier</label>
-          <select id="fk-tier" style="width:100%;padding:8px 11px;background:#1a1922;border:1px solid #3a342c;color:#ebe3d2;border-radius:3px;font-size:13.5px;font-family:inherit">
+      <div style="background:#13121a;border:1px solid #c08a3a;border-radius:5px;max-width:640px;width:100%;padding:22px 24px;color:#ebe3d2;font-family:system-ui,-apple-system,sans-serif;font-size:13.5px;line-height:1.55">
+        <h3 style="font-family:Georgia,serif;font-size:18px;color:#c08a3a;margin-bottom:14px">◊ Fall Kit · your AI helper</h3>
+
+        <div style="margin-bottom:14px;padding:12px 14px;background:#1a1922;border:1px solid #2a2934;border-radius:4px">
+          <label for="fk-ask" style="${styleLabel}">Ask about this page</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input id="fk-ask" type="text" placeholder="How do I use this?" autocomplete="off" style="${styleInput};flex:1;min-width:180px;margin-bottom:0">
+            <button id="fk-ask-go" style="padding:7px 14px;background:#c08a3a;color:#0a0a0a;border:none;border-radius:3px;font-weight:600;font-size:12px;cursor:pointer;font-family:inherit">Ask</button>
+            <button id="fk-ask-new" style="padding:7px 12px;background:transparent;color:#a89e88;border:1px solid #3a342c;border-radius:3px;font-size:11px;cursor:pointer;font-family:inherit">Start again</button>
+          </div>
+          <div id="fk-ask-out" aria-live="polite" style="white-space:pre-wrap;margin-top:10px;font-size:13px;color:#ebe3d2;line-height:1.6"></div>
+          <div style="font-size:11px;color:#6e6a5e;line-height:1.55;margin-top:6px">Answered from this page’s own words, by the brain you pick below. The page is read once per talk and sent the same each time, so a provider that caches pays for it once.</div>
+        </div>
+
+        <div style="margin-bottom:14px"><label style="${styleLabel}">Tier</label>
+          <select id="fk-tier" style="${styleInput}">
             <option value="T0"${tier==='T0'?' selected':''}>T0 · off (default · the seed works fully without AI)</option>
             <option value="T2"${tier==='T2'?' selected':''}>T2 · WebLLM in-browser · sovereign · pick a model below</option>
-            <option value="T3"${tier==='T3'?' selected':''}>T3 · BYOK · Anthropic / OpenAI / Google · stored in your browser only</option>
+            <option value="T3"${tier==='T3'?' selected':''}>T3 · BYOK · configure providers per modality below</option>
           </select>
         </div>
+
         <div id="fk-t2-block" style="display:${tier==='T2'?'block':'none'};margin-bottom:14px;padding:12px 14px;background:#1a1922;border:1px solid #2a2934;border-radius:4px">
-          <label style="display:block;font-size:11px;color:#a89e88;letter-spacing:.04em;margin-bottom:6px;text-transform:uppercase">WebLLM model · 1B → 70B cascade</label>
-          <select id="fk-model" style="width:100%;padding:8px 11px;background:#22212c;border:1px solid #3a342c;color:#ebe3d2;border-radius:3px;font-size:13px;font-family:inherit">
+          <label style="${styleLabel}">WebLLM model · 1B → 70B cascade</label>
+          <select id="fk-model" style="${styleInput}">
             ${Object.entries(WEBLLM_MODELS).map(([k,m]) => `<option value="${k}"${(STATE.config.webllm_model||DEFAULT_MODEL)===k?' selected':''}>${esc(m.label)} · ${esc(m.size)}</option>`).join('')}
           </select>
-          <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <button id="fk-load-llm" style="padding:7px 14px;background:#c08a3a;color:#0a0a0a;border:none;border-radius:3px;font-weight:600;font-size:12px;cursor:pointer;font-family:inherit">${STATE.ai.ready?'✓ Loaded · switch':'Load model (one-time download)'}</button>
-            <span id="fk-llm-status" style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#a89e88;letter-spacing:.04em">${STATE.ai.ready?'ready':STATE.ai.loading?Math.round(STATE.ai.progress)+'%':'not loaded'}</span>
+            <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#a89e88;letter-spacing:.04em">${STATE.ai.ready?'ready':STATE.ai.loading?Math.round(STATE.ai.progress)+'%':'not loaded'}</span>
           </div>
-          <div style="margin-top:8px;font-size:11px;color:#6e6a5e;line-height:1.55">First load downloads the model from @mlc-ai/web-llm CDN. Cached forever after. Inference is 100% local — open DevTools → Network during use, nothing leaves.</div>
         </div>
-        <div id="fk-t3-block" style="display:${tier==='T3'?'block':'none'};margin-bottom:14px;padding:12px 14px;background:#1a1922;border:1px solid #2a2934;border-radius:4px">
-          <label style="display:block;font-size:11px;color:#a89e88;letter-spacing:.04em;margin-bottom:6px;text-transform:uppercase">BYOK provider</label>
-          <select id="fk-provider" style="width:100%;padding:8px 11px;background:#22212c;border:1px solid #3a342c;color:#ebe3d2;border-radius:3px;font-size:13px;font-family:inherit;margin-bottom:10px">
-            ${Object.entries(T3_PROVIDERS).map(([k,p]) => `<option value="${k}"${provider===k?' selected':''}>${esc(p.label)}</option>`).join('')}
-          </select>
-          <label style="display:block;font-size:11px;color:#a89e88;letter-spacing:.04em;margin-bottom:6px;text-transform:uppercase">Model</label>
-          <select id="fk-api-model" style="width:100%;padding:8px 11px;background:#22212c;border:1px solid #3a342c;color:#ebe3d2;border-radius:3px;font-size:13px;font-family:inherit;margin-bottom:10px">
-            ${providerCfg.models.map(m => `<option value="${m}"${(STATE.config.api_model||providerCfg.default)===m?' selected':''}>${esc(m)}</option>`).join('')}
-          </select>
-          <label style="display:block;font-size:11px;color:#a89e88;letter-spacing:.04em;margin-bottom:6px;text-transform:uppercase">API key</label>
-          <input type="password" id="fk-key" value="${esc(STATE.config.api_key || '')}" placeholder="${STATE.config.api_key ? '(set · leave empty to keep)' : 'sk-ant-... or sk-... or AIza...'}" autocomplete="off" style="width:100%;padding:8px 11px;background:#22212c;border:1px solid #3a342c;color:#ebe3d2;border-radius:3px;font-size:13px;font-family:ui-monospace,Menlo,monospace">
-          <div style="margin-top:8px;font-size:11px;color:#6e6a5e;line-height:1.55">Key lives in this browser only (localStorage). Sent direct to the provider — never to us. Wipe with Reset.</div>
+
+        <div id="fk-t3-block" style="display:${tier==='T3'?'block':'none'};margin-bottom:14px">
+          <div style="display:flex;gap:2px;margin-bottom:10px;border-bottom:1px solid #2a2934">
+            ${['text','image','video','tts','stt'].map(m => `<button data-tab="${m}" class="fk-tab${tab===m?' on':''}" style="padding:8px 14px;background:${tab===m?'#22212c':'transparent'};color:${tab===m?'#c08a3a':'#a89e88'};border:none;border-bottom:2px solid ${tab===m?'#c08a3a':'transparent'};font-family:ui-monospace,Menlo,monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;cursor:pointer">${m}</button>`).join('')}
+          </div>
+          <div style="padding:12px 14px;background:#1a1922;border:1px solid #2a2934;border-radius:4px">
+            ${tab==='text'  ? modalityBlock('text',  TEXT_PROVIDERS,  textP, getKey('text',  textP), getModel('text',  textP, TEXT_PROVIDERS))  : ''}
+            ${tab==='image' ? modalityBlock('image', IMAGE_PROVIDERS, imgP,  getKey('image', imgP),  getModel('image', imgP,  IMAGE_PROVIDERS)) : ''}
+            ${tab==='video' ? modalityBlock('video', VIDEO_PROVIDERS, vidP,  getKey('video', vidP),  getModel('video', vidP,  VIDEO_PROVIDERS)) : ''}
+            ${tab==='tts'   ? modalityBlock('tts',   TTS_PROVIDERS,   ttsP,  getKey('tts',   ttsP),  getModel('tts',   ttsP,   TTS_PROVIDERS))   : ''}
+            ${tab==='stt'   ? modalityBlock('stt',   STT_PROVIDERS,   sttP,  getKey('stt',   sttP),  getModel('stt',   sttP,   STT_PROVIDERS))   : ''}
+          </div>
+          <label style="display:flex;gap:8px;align-items:flex-start;margin-top:10px;font-size:12px;color:#ebe3d2;cursor:pointer"><input type="checkbox" id="fk-remember"${STATE.config.remember_keys===true?' checked':''} style="margin-top:2px"> Remember my keys on this device</label>
+          <div style="font-size:11px;color:#a14a2a;line-height:1.55;margin:4px 0 0 22px">Every estate page at this web address shares this browser’s storage, so a remembered key can be read by any of them. Leave it off and your keys are held in this tab only: close it and they are gone.</div>
+          <button id="fk-forget" style="margin-top:10px;padding:6px 12px;background:transparent;color:#a89e88;border:1px solid #3a342c;border-radius:3px;font-size:11px;cursor:pointer;font-family:inherit">Forget my keys</button>
         </div>
+
         <div style="margin-bottom:14px;padding:12px 14px;background:#1a1922;border:1px solid #2a2934;border-radius:4px">
-          <label style="display:block;font-size:11px;color:#a89e88;letter-spacing:.04em;margin-bottom:6px;text-transform:uppercase">Cross-seed mesh</label>
+          <label style="${styleLabel}">Cross-seed mesh</label>
           <div style="display:flex;gap:8px;align-items:center">
             <button id="fk-mesh-toggle" style="padding:6px 12px;background:${STATE.mesh.active?'#6b8d4a':'#1a1922'};color:${STATE.mesh.active?'#fff':'#a89e88'};border:1px solid ${STATE.mesh.active?'#6b8d4a':'#3a342c'};border-radius:3px;font-size:11px;cursor:pointer;font-family:inherit">${STATE.mesh.active?'✓ Active · disconnect':'Activate mesh'}</button>
             <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#6e6a5e;letter-spacing:.04em">channel · <code style="background:#22212c;padding:1px 5px;border-radius:2px">${MESH_CHANNEL}</code></span>
           </div>
-          <div style="margin-top:8px;font-size:11px;color:#6e6a5e;line-height:1.55">BroadcastChannel for same-device · WebRTC for cross-device (planned). Other estate seeds on the same channel discover each other automatically.</div>
         </div>
+
         <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
           <button onclick="FallKit.closeSettings()" style="padding:7px 14px;background:transparent;color:#a89e88;border:1px solid #3a342c;border-radius:3px;font-size:12px;cursor:pointer;font-family:inherit">Close</button>
           <button id="fk-save" style="padding:7px 14px;background:#c08a3a;color:#0a0a0a;border:none;border-radius:3px;font-weight:600;font-size:12px;cursor:pointer;font-family:inherit">Save</button>
         </div>
-        <div style="margin-top:14px;font-family:ui-monospace,Menlo,monospace;font-size:9px;color:#6e6a5e;letter-spacing:.08em;text-align:center">◊ Fall Kit v${FALL_KIT_VERSION} · MIT · ai-nativesolutions.com · ◊·κ=1</div>
+        <div style="margin-top:14px;font-family:ui-monospace,Menlo,monospace;font-size:9px;color:#6e6a5e;letter-spacing:.08em;text-align:center">◊ Fall Kit v${FALL_KIT_VERSION} · MIT · ai-nativesolutions.com</div>
       </div>`;
-    // Wire interactions
+
+    const askOut = $('#fk-ask-out');
+    if (STATE.ask.last) askOut.textContent = STATE.ask.last;
+    const ask = async () => {
+      const go = $('#fk-ask-go'); go.disabled = true; askOut.textContent = '…';
+      try { const r = await askPage($('#fk-ask').value); askOut.textContent = r.text === null ? r.why : r.text; }
+      catch (e) { askOut.textContent = 'The provider said no: ' + e.message; }
+      go.disabled = false;
+    };
+    $('#fk-ask-go').onclick = ask;
+    $('#fk-ask').onkeydown = (e) => { if (e.key === 'Enter') ask(); };
+    $('#fk-ask-new').onclick = () => { STATE.ask = { opening: null, talk: [], last: null }; askOut.textContent = 'A fresh talk: the page is read again at the next question.'; };
+
     $('#fk-tier').onchange = () => {
       const t = $('#fk-tier').value;
       $('#fk-t2-block').style.display = t === 'T2' ? 'block' : 'none';
       $('#fk-t3-block').style.display = t === 'T3' ? 'block' : 'none';
     };
-    $('#fk-provider') && ($('#fk-provider').onchange = () => {
-      const p = $('#fk-provider').value;
-      const sel = $('#fk-api-model');
-      sel.innerHTML = T3_PROVIDERS[p].models.map(m => `<option value="${m}">${esc(m)}</option>`).join('');
+    document.querySelectorAll('.fk-tab').forEach(b => b.onclick = () => { STATE._lastTab = b.dataset.tab; openSettings(b.dataset.tab); });
+
+    ['text','image','video','tts','stt'].forEach(m => {
+      const sel = $('#fk-' + m + '-provider');
+      if (!sel) return;
+      const registry = { text: TEXT_PROVIDERS, image: IMAGE_PROVIDERS, video: VIDEO_PROVIDERS, tts: TTS_PROVIDERS, stt: STT_PROVIDERS }[m];
+      sel.onchange = () => {
+        const pk = sel.value;
+        const modelSel = $('#fk-' + m + '-model');
+        modelSel.innerHTML = modelOptions(registry, pk, registry[pk].default);
+        const keyInput = $('#fk-' + m + '-key');
+        const existing = getKey(m, pk);
+        keyInput.value = existing;
+        keyInput.placeholder = existing ? '(set · leave to keep)' : 'paste key here';
+      };
     });
-    $('#fk-load-llm') && ($('#fk-load-llm').onclick = () => {
-      const m = $('#fk-model').value;
-      loadWebLLM(m);
-    });
+
+    $('#fk-load-llm') && ($('#fk-load-llm').onclick = () => { loadWebLLM($('#fk-model').value); });
     $('#fk-mesh-toggle').onclick = () => {
       if (STATE.mesh.active) { STATE.mesh.bc?.close(); STATE.mesh.active = false; STATE.mesh.bc = null; notify('Mesh disconnected'); }
       else meshStart({ seedName: STATE.config.seedName || 'seed' });
-      openSettings();  // refresh modal
+      openSettings(STATE._lastTab);
     };
+
+    $('#fk-forget') && ($('#fk-forget').onclick = () => { forgetKeys(); notify('Keys forgotten · this tab and this device', 'ok'); openSettings(STATE._lastTab); });
     $('#fk-save').onclick = () => {
       STATE.config.ai_tier = $('#fk-tier').value;
+      if ($('#fk-remember')) STATE.config.remember_keys = $('#fk-remember').checked;
       if ($('#fk-model')) STATE.config.webllm_model = $('#fk-model').value;
-      if ($('#fk-provider')) STATE.config.api_provider = $('#fk-provider').value;
-      if ($('#fk-api-model')) STATE.config.api_model = $('#fk-api-model').value;
-      const newKey = $('#fk-key')?.value;
-      if (newKey) STATE.config.api_key = newKey;
+      ['text','image','video','tts','stt'].forEach(m => {
+        const provSel = $('#fk-' + m + '-provider');
+        if (!provSel) return;
+        const pk = provSel.value;
+        const model = $('#fk-' + m + '-model').value;
+        const newKey = $('#fk-' + m + '-key').value.trim();
+        const existing = getKey(m, pk);
+        STATE.config[m + '_provider'] = pk;
+        if (newKey || existing) setKey(m, pk, newKey || existing, model);
+      });
       saveConfig(); renderAiChip(); notify('Saved', 'ok'); closeSettings();
     };
   }
   function closeSettings() { const bg = $('#fk-modal-bg'); if (bg) bg.remove(); }
 
-  // ─── Help section (returns HTML string for inclusion in seed Help tabs) ───
+  // ─── Help section ───────────────────────────────────────────────────
   function helpSection() {
     return `<div style="background:rgba(192,138,58,.05);border:1px solid #3a342c;border-radius:4px;padding:18px 22px;margin:14px 0">
-      <h4 style="font-family:Georgia,serif;font-size:15px;color:#c08a3a;margin-bottom:12px">◊ AI cascade · the 3 tiers</h4>
-      <p style="font-size:13px;color:#a89e88;line-height:1.7;margin-bottom:10px">This seed runs fully without AI (<strong style="color:#c08a3a">T0</strong>, default). Enable a tier in settings if you want AI-assist features:</p>
+      <h4 style="font-family:Georgia,serif;font-size:15px;color:#c08a3a;margin-bottom:12px">◊ Fall Kit · AI cascade · 3 tiers · 5 modalities</h4>
+      <p style="font-size:13px;color:#a89e88;line-height:1.7;margin-bottom:10px">This seed runs fully without AI (<strong style="color:#c08a3a">T0</strong>, default). Enable a tier in settings if you want AI-assist:</p>
       <table style="width:100%;border-collapse:collapse;font-size:12.5px">
         <thead><tr><th style="padding:6px 10px;text-align:left;background:rgba(0,0,0,.2);font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#a89e88;letter-spacing:.08em;text-transform:uppercase">Tier</th><th style="padding:6px 10px;text-align:left;background:rgba(0,0,0,.2);font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#a89e88;letter-spacing:.08em;text-transform:uppercase">What it is</th></tr></thead>
         <tbody>
           <tr><td style="padding:6px 10px;border-top:1px solid #2a2934;color:#c08a3a;font-weight:600">T0</td><td style="padding:6px 10px;border-top:1px solid #2a2934;color:#a89e88">Off. The seed works fully. No AI · no downloads · no API calls.</td></tr>
-          <tr><td style="padding:6px 10px;border-top:1px solid #2a2934;color:#c08a3a;font-weight:600">T2</td><td style="padding:6px 10px;border-top:1px solid #2a2934;color:#a89e88">WebLLM in-browser. Pick a model: 1B (700MB, fast) → 3B (2GB, balanced) → 7B (5GB, capable) → 70B (40GB, frontier). One-time download, runs offline forever after. Zero data leaves your device.</td></tr>
-          <tr><td style="padding:6px 10px;border-top:1px solid #2a2934;color:#c08a3a;font-weight:600">T3</td><td style="padding:6px 10px;border-top:1px solid #2a2934;color:#a89e88">BYOK · Anthropic Claude · OpenAI GPT · Google Gemini. You bring the API key, you pay the provider direct. Key stays in your browser, sent direct to the provider, never proxied.</td></tr>
+          <tr><td style="padding:6px 10px;border-top:1px solid #2a2934;color:#c08a3a;font-weight:600">T2</td><td style="padding:6px 10px;border-top:1px solid #2a2934;color:#a89e88">WebLLM in-browser. Pick a model: 1B (700MB) → 3B (2GB, default) → 7B (5GB) → 70B (40GB). One-time download, offline forever. Zero data leaves.</td></tr>
+          <tr><td style="padding:6px 10px;border-top:1px solid #2a2934;color:#c08a3a;font-weight:600">T3</td><td style="padding:6px 10px;border-top:1px solid #2a2934;color:#a89e88">BYOK · 12 text providers (Claude, GPT, Gemini, Groq, Cerebras, DeepSeek, OpenRouter, Mistral, Cohere, Together, HuggingFace, Grok) · 7 image (fal, HF, Replicate, DALL-E, Imagen, Ideogram, Leonardo, Aurora) · 5 video (fal, Luma, Runway, Pika, Kling) · 4 TTS (ElevenLabs, OpenAI, PlayHT, Cartesia) · 3 STT (Deepgram, AssemblyAI, Whisper). You bring keys, you pay direct. Keys are held in this tab only, unless you choose to remember them on this device. The same opening is sent first every time, so a provider that caches can reuse its reading of it.</td></tr>
         </tbody>
       </table>
       <p style="font-size:12px;color:#6e6a5e;line-height:1.6;margin-top:10px">Open the AI chip in the header to switch tier or check status. Cross-seed mesh activates a BroadcastChannel on <code style="background:#1a1922;padding:1px 5px;border-radius:2px">${MESH_CHANNEL}</code> so other estate seeds on the same device discover this one.</p>
     </div>`;
   }
 
-  // ─── CSS for AI chip ─────────────────────────────────────────────
+  // ─── CSS for AI chip ────────────────────────────────────────────────
   function injectCss() {
     if (document.getElementById('fk-css')) return;
     const s = document.createElement('style');
@@ -657,17 +1165,37 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
     document.head.appendChild(s);
   }
 
-  // ─── KCC Mint launcher (v1.2 · fork-this-seed shortcut) ──────────
-  function openMint() {
-    const slug = (STATE.config.seedName || location.hostname.split('.')[0] || 'seed').replace(/[^a-z0-9-]/gi, '-').toLowerCase();
-    const name = document.title.replace(/^[◊·\s]+/, '').split('·')[0].trim() || slug;
-    const url = location.href.split('?')[0].split('#')[0];
-    const desc = document.querySelector('meta[name="description"]')?.content?.slice(0, 200) || '';
-    const params = new URLSearchParams({ fork: '1', parent_slug: slug, parent_name: name, parent_url: url, parent_desc: desc });
-    window.open(KCC_MINT_URL + '?' + params.toString(), '_blank', 'noopener');
+  // ─── The floating chip keeps clear of the build's own fixed bars and controls ─────────
+  // A build's bottom tab bar or floating button stays put while the page scrolls, so a chip over it would hide it. The
+  // chip looks at what is under it and moves up past it; a fixed container as tall as the page counts only by the
+  // control under the chip. Content that scrolls is not in the way.
+  function blockerUnder(el) {
+    let fixed = null;
+    for (let e = el; e && e !== document.body && e !== document.documentElement; e = e.parentElement) {
+      const pos = getComputedStyle(e).position;
+      if (pos === 'fixed' || pos === 'sticky') { fixed = e; break; }
+    }
+    if (!fixed) return null;
+    if (fixed.getBoundingClientRect().height <= innerHeight * 0.4) return fixed;
+    return el.closest('button, a, input, select, textarea, label, [role=button], [tabindex]');
+  }
+  function placeChip(chip) {
+    if (!chip || chip.dataset.anchored) return;
+    chip.style.top = ''; chip.style.bottom = '14px';
+    for (let i = 0; i < 6; i++) {
+      const r = chip.getBoundingClientRect();
+      chip.style.visibility = 'hidden';
+      const hit = [[r.left + 2, r.top + 2], [r.right - 2, r.top + 2], [r.left + 2, r.bottom - 2], [r.right - 2, r.bottom - 2]]
+        .map(([x, y]) => document.elementFromPoint(x, y)).filter(Boolean).map(blockerUnder).find(Boolean);
+      chip.style.visibility = '';
+      if (!hit) return;
+      const bottom = innerHeight - hit.getBoundingClientRect().top + 8;
+      if (bottom > innerHeight * 0.6) { chip.style.bottom = ''; chip.style.top = '14px'; return; }
+      chip.style.bottom = bottom + 'px';
+    }
   }
 
-  // ─── Init ────────────────────────────────────────────────────────
+  // ─── Init ───────────────────────────────────────────────────────────
   function init(opts) {
     opts = opts || {};
     injectCss();
@@ -675,38 +1203,43 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
     if ($('#fk-ai-chip')) { renderAiChip(); return { version: FALL_KIT_VERSION, mounted: false }; }
     const chip = document.createElement('button');
     chip.id = 'fk-ai-chip';
-    chip.title = 'AI cascade · click to configure tier and model';
+    chip.title = 'AI helper · ask about this page, or pick the brain';
     chip.innerHTML = '<span class="fk-dot"></span><span id="fk-ai-chip-text">T0 · off</span>';
-    chip.onclick = openSettings;
-    // Try anchor first, fall back to floating bottom-right
+    chip.onclick = () => openSettings();
     const anchor = opts.chipAnchor ? $(opts.chipAnchor) : null;
-    if (anchor) { anchor.appendChild(chip); }
+    if (anchor) { anchor.appendChild(chip); chip.dataset.anchored = '1'; }
     else {
       chip.style.cssText += ';position:fixed;bottom:14px;left:14px;z-index:9998;box-shadow:0 4px 14px rgba(0,0,0,.4)';
       document.body.appendChild(chip);
-    }
-    // v1.2 · floating mint button next to chip
-    if (!$('#fk-mint-btn') && !opts.hideMint) {
-      const mintBtn = document.createElement('button');
-      mintBtn.id = 'fk-mint-btn';
-      mintBtn.title = 'Mint a fork of this seed as a KCC bundle · provenance economy';
-      mintBtn.innerHTML = '<span style="font-size:13px">✦</span> mint fork';
-      mintBtn.style.cssText = 'position:fixed;bottom:14px;left:130px;z-index:9998;display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:3px;font-family:ui-monospace,Menlo,monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;cursor:pointer;border:1px solid #c08a3a;color:#c08a3a;background:rgba(10,10,15,.7);box-shadow:0 4px 14px rgba(0,0,0,.4)';
-      mintBtn.onmouseover = () => { mintBtn.style.background = '#c08a3a'; mintBtn.style.color = '#0a0a0a'; };
-      mintBtn.onmouseout  = () => { mintBtn.style.background = 'rgba(10,10,15,.7)'; mintBtn.style.color = '#c08a3a'; };
-      mintBtn.onclick = openMint;
-      document.body.appendChild(mintBtn);
+      const place = () => placeChip(chip);
+      setTimeout(place, 0); setTimeout(place, 1200);   // once now, once after the build has laid itself out
+      let t = null; addEventListener('resize', () => { clearTimeout(t); t = setTimeout(place, 200); });
     }
     renderAiChip();
+    if (BOOT.moved) notify('AI keys are now held in this tab only · tick “remember” in AI settings to keep them', 'info');
     return { version: FALL_KIT_VERSION, mounted: true };
   }
 
-  // ─── Public API ──────────────────────────────────────────────────
+  // ─── Public API ─────────────────────────────────────────────────────
   root.FallKit = {
     version: FALL_KIT_VERSION,
     init: init,
     aiTier: aiTier,
     aiComplete: aiComplete,
+    aiChat: aiChat,
+    askPage: askPage,
+    pageOpening: pageOpening,
+    lastUsage: () => STATE.lastUsage,
+    forgetKeys: forgetKeys,
+    requestOf: requestOf,
+    textOf: textOf,
+    usageOf: usageOf,
+    configFrom: configFrom,
+    storedForm: storedForm,
+    aiImage: aiImage,
+    aiVideo: aiVideo,
+    aiTTS: aiTTS,
+    aiSTT: aiSTT,
     loadWebLLM: loadWebLLM,
     openSettings: openSettings,
     closeSettings: closeSettings,
@@ -715,9 +1248,12 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
     meshStart: meshStart,
     meshPost: meshPost,
     notify: notify,
-    openMint: openMint,  // v1.2 · launch kcc-mint with this seed prefilled as parent
     MODELS: WEBLLM_MODELS,
-    PROVIDERS: T3_PROVIDERS,
+    TEXT_PROVIDERS: TEXT_PROVIDERS,
+    IMAGE_PROVIDERS: IMAGE_PROVIDERS,
+    VIDEO_PROVIDERS: VIDEO_PROVIDERS,
+    TTS_PROVIDERS: TTS_PROVIDERS,
+    STT_PROVIDERS: STT_PROVIDERS,
     state: STATE,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

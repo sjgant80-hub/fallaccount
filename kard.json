@@ -1,0 +1,29 @@
+{
+  "kind": "kard.v1",
+  "name": "fallaccount",
+  "title": "FallAccount Elite",
+  "retires": "a sole trader accounting subscription",
+  "category": "Accounting and tax",
+  "license": "MIT",
+  "live": "https://sjgant80-hub.github.io/fallaccount/",
+  "repo": "https://github.com/sjgant80-hub/fallaccount",
+  "studs": {
+    "brain": {
+      "how": "inline",
+      "version": "3.1.0"
+    },
+    "mesh": {
+      "device": true,
+      "peer": false
+    },
+    "memory": {
+      "indexeddb": true,
+      "localstorage": true
+    },
+    "proof": {
+      "workflows": 1,
+      "tests": 1
+    }
+  },
+  "fits": true
+}
