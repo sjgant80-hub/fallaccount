@@ -319,7 +319,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
 <!-- FALL_KIT_BEGIN v1 · DO NOT EDIT THIS BLOCK MANUALLY -->
 <script>
 /*!
- * Fall Kit · v3.1.0 · the shared cascade for every estate seed (the brain stud of the estate's Lego socket)
+ * Fall Kit · v3.2.0 · the shared cascade for every estate seed (the brain stud of the estate's Lego socket)
  * MIT · AI-Native Solutions · ai-nativesolutions.com
  *
  * Inlineable JS module. Drop into any seed via <script> or copy-paste inline.
@@ -341,6 +341,10 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
  *    the person picked, so the chip is useful in any build: FallKit.askPage(question) → { text, why }
  *  - AI chip UI in header · settings modal with tabs for each modality
  *  - Same-device mesh (BroadcastChannel: estate seeds open on this device find each other; not cross-device)
+ *  - NEW in v3.2 · The mesh speaks LIGHT: every message is a LIGHT packet signed by this device's own key and checked
+ *    before it is read (the estate going live, Phase 2). The LIGHT part is one gated module on this origin
+ *    (/fall-kit/core/mesh.mjs), loaded only when the mesh is switched on; an old JSON message still arrives, marked
+ *    legacy; on a page served anywhere else the mesh speaks JSON as before. FallKit.meshStats() counts what it heard.
  *  - Help section partial: FallKit.helpSection()
  *  - Settings panel:       FallKit.openSettings()
  *
@@ -355,7 +359,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
 (function (root) {
   'use strict';
 
-  const FALL_KIT_VERSION = '3.1.0';
+  const FALL_KIT_VERSION = '3.2.0';
 
   // ─── WebLLM (T2) model registry ─────────────────────────────────────
   const WEBLLM_MODELS = {
@@ -471,7 +475,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
     config: BOOT.config,
     secrets: BOOT.secrets,   // the keys: this tab only, unless remember_keys
     ai: { ready: false, loading: false, progress: 0, engine: null, model: null },
-    mesh: { active: false, peers: new Map(), bc: null, signal: null },
+    mesh: { active: false, peers: new Map(), bc: null, signal: null, light: null, stats: { sent: 0, admitted: 0, legacy: 0, refused: {} } },
     lastUsage: null,
     ask: { opening: null, talk: [], last: null },   // the talk about this page: its opening, kept identical, and its turns
   };
@@ -920,26 +924,57 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
 
   // ─── WebRTC P2P mesh ────────────────────────────────────────────────
   const MESH_CHANNEL = 'fall-signal';
-  function meshStart(opts) {
+  const MESH_MODULE = '/fall-kit/core/mesh.mjs', MESH_DEVICE = '/fall-kit/core/mesh-device.mjs';
+  // v3.2: the LIGHT mesh, loaded from this origin when the mesh is switched on. null = JSON, as before v3.2.
+  async function lightMesh() {
+    try {
+      const [M, D] = await Promise.all([import(MESH_MODULE), import(MESH_DEVICE)]);
+      const dev = await D.openDevice();
+      const tab = crypto.getRandomValues(new Uint32Array(1))[0];
+      return { M, dev, tab, seq: 0, last: new Map() };
+    } catch (e) { return null; }
+  }
+  function meshSend(value) {
+    const L = STATE.mesh.light, bc = STATE.mesh.bc;
+    if (!L) { bc.postMessage(value); STATE.mesh.stats.sent++; return; }
+    L.seq += 1;
+    L.M.speak(value, { slot: L.dev.slot, tab: L.tab, seq: L.seq, sign: L.dev.sign }).then((r) => { if (r.ok && STATE.mesh.bc) { STATE.mesh.bc.postMessage(r.bytes); STATE.mesh.stats.sent++; } });
+  }
+  async function meshStart(opts) {
     if (STATE.mesh.active) return;
     opts = opts || {};
     const seedId = opts.seedId || (location.pathname + '#' + Math.random().toString(36).slice(2, 8));
     STATE.mesh.seedId = seedId;
     try { STATE.mesh.bc = new BroadcastChannel(MESH_CHANNEL); }
     catch (e) { console.warn('fall-kit: BroadcastChannel unavailable'); return; }
-    STATE.mesh.bc.onmessage = e => {
-      const m = e.data;
-      if (!m || !m.kind || m.peerId === seedId) return;
-      if (opts.onMessage) opts.onMessage(m);
-    };
-    STATE.mesh.bc.postMessage({ kind: 'fall-kit:hello', peerId: seedId, ts: Date.now(), seedName: opts.seedName || 'unknown' });
     STATE.mesh.active = true;
-    notify('Mesh active · channel ' + MESH_CHANNEL, 'ok');
+    STATE.mesh.light = opts.light === false ? null : await lightMesh();
+    const st = STATE.mesh.stats;
+    STATE.mesh.bc.onmessage = async (e) => {
+      const L = STATE.mesh.light;
+      if (!L) {
+        const m = e.data;
+        if (!m || !m.kind || m.peerId === seedId) return;
+        if (opts.onMessage) opts.onMessage(m);
+        return;
+      }
+      const r = await L.M.hearMesh(e.data, { slot: L.dev.slot, id: L.dev.id, raw: L.dev.raw, verifyBytes: L.dev.verifyBytes, last: L.last });
+      if (!r.ok) { st.refused[r.stage] = (st.refused[r.stage] || 0) + 1; return; }
+      if (r.legacy) st.legacy++; else st.admitted++;
+      if (r.value.peerId === seedId) return;
+      if (opts.onMessage) opts.onMessage(Object.assign({}, r.value, r.legacy ? { legacy: true } : { light: true, tab: r.tab }));
+    };
+    meshSend({ kind: 'fall-kit:hello', peerId: seedId, ts: Date.now(), seedName: opts.seedName || 'unknown' });
+    notify('Mesh active · channel ' + MESH_CHANNEL + (STATE.mesh.light ? ' · LIGHT' : ''), 'ok');
   }
   function meshPost(kind, payload) {
     if (!STATE.mesh.active || !STATE.mesh.bc) return false;
-    STATE.mesh.bc.postMessage({ kind: kind, peerId: STATE.mesh.seedId, ts: Date.now(), payload: payload });
+    meshSend({ kind: kind, peerId: STATE.mesh.seedId, ts: Date.now(), payload: payload });
     return true;
+  }
+  function meshStats() {
+    const s = STATE.mesh.stats;
+    return { active: STATE.mesh.active, light: !!STATE.mesh.light, tab: STATE.mesh.light ? STATE.mesh.light.tab : null, sent: s.sent, admitted: s.admitted, legacy: s.legacy, refused: Object.assign({}, s.refused) };
   }
 
   // ─── Toast ──────────────────────────────────────────────────────────
@@ -1146,7 +1181,8 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
 
   // ─── CSS for AI chip ────────────────────────────────────────────────
   function injectCss() {
-    if (document.getElementById('fk-css')) return;
+    if (STATE.cssIn) return;   // the kit knows it added its styles; no lookup of an id the build's own page never has
+    STATE.cssIn = true;
     const s = document.createElement('style');
     s.id = 'fk-css';
     s.textContent = `
@@ -1247,6 +1283,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
     helpSection: helpSection,
     meshStart: meshStart,
     meshPost: meshPost,
+    meshStats: meshStats,
     notify: notify,
     MODELS: WEBLLM_MODELS,
     TEXT_PROVIDERS: TEXT_PROVIDERS,
