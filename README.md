@@ -213,5 +213,4 @@ Built with **Claude** (Anthropic), **WebLLM** (MLC AI), and the quiet confidence
 
 ---
 
-**◊·κ=1**
 *The standard endures.*
